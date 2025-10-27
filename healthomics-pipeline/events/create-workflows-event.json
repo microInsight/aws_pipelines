@@ -1,0 +1,14 @@
+{
+  "RequestType": "Create",
+  "ResponseURL": "https://cloudformation-custom-resource-response-useast1.s3.amazonaws.com/test",
+  "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/test-stack/test-id",
+  "RequestId": "test-request-id",
+  "ResourceType": "Custom::CreateOmicsWorkflows",
+  "LogicalResourceId": "CreateWorkflows",
+  "ResourceProperties": {
+    "ServiceToken": "arn:aws:lambda:us-east-1:123456789012:function:create-omics-workflows",
+    "WorkflowConfig": ["mag:4.0.0", "metatdenovo:1.2.0"],
+    "CodeBucketName": "nfcore-healthomics-bundles-123456789012",
+    "DefaultStorageCapacity": "100"
+  }
+} 

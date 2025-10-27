@@ -1,0 +1,272 @@
+{
+    "input": {
+        "description": "Path to comma-separated file containing information about the samples in the experiment.",
+        "optional": false
+    },
+    "se_reads": {
+        "description": "Activate when using single end reads input",
+        "optional": true
+    },
+    "profile": {
+        "description": "Profile to use for the pipeline.",
+        "optional": true
+    },
+    "outdir": {
+        "description": "The output directory where the results will be saved. You have to use absolute paths to storage on Cloud infrastructure.",
+        "optional": true
+    },
+    "email": {
+        "description": "Email address for completion summary.",
+        "optional": true
+    },
+    "multiqc_title": {
+        "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
+        "optional": true
+    },
+    "skip_qc": {
+        "description": "Skip all QC steps except for MultiQC.",
+        "optional": true
+    },
+    "skip_fastqc": {
+        "description": "Skip FastQC.",
+        "optional": true
+    },
+    "clip_r1": {
+        "description": "Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads).",
+        "optional": true
+    },
+    "clip_r2": {
+        "description": "Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only).",
+        "optional": true
+    },
+    "three_prime_clip_r1": {
+        "description": "Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed.",
+        "optional": true
+    },
+    "three_prime_clip_r2": {
+        "description": "Instructs Trim Galore to remove bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed.",
+        "optional": true
+    },
+    "save_trimmed": {
+        "description": "Save the trimmed FastQ files in the results directory.",
+        "optional": true
+    },
+    "trim_nextseq": {
+        "description": "Instructs Trim Galore to apply the --nextseq=X option, to trim based on quality after removing poly-G tails.",
+        "optional": true
+    },
+    "skip_trimming": {
+        "description": "Skip the adapter trimming step.",
+        "optional": true
+    },
+    "sequence_filter": {
+        "description": "Fasta file with sequences to filter away before running assembly etc..",
+        "optional": true
+    },
+    "bbnorm": {
+        "description": "Perform normalization to reduce sequencing depth.",
+        "optional": true
+    },
+    "bbnorm_target": {
+        "description": "Reduce the number of reads for assembly average coverage of this number.",
+        "optional": true
+    },
+    "bbnorm_min": {
+        "description": "Reads with an apparent depth of under nx will be presumed to be errors and discarded",
+        "optional": true
+    },
+    "save_bbnorm_fastq": {
+        "description": "Save the resulting fastq files from normalization",
+        "optional": true
+    },
+    "assembler": {
+        "description": "Specify the assembler to run. Possible alternatives: megahit, spades.",
+        "optional": true
+    },
+    "user_assembly": {
+        "description": "Path to a fasta file with a finished assembly. Assembly will be skipped by the pipeline.",
+        "optional": true
+    },
+    "user_assembly_name": {
+        "description": "Name to give to the user-provided assembly.",
+        "optional": true
+    },
+    "min_contig_length": {
+        "description": "Filter out contigs shorter than this.",
+        "optional": true
+    },
+    "spades_flavor": {
+        "description": "Select which type of assembly you want to make. Default: rna",
+        "optional": true
+    },
+    "save_formatspades": {
+        "description": "Save the formatted spades fasta file",
+        "optional": true
+    },
+    "save_bam": {
+        "description": "Save the bam files from mapping",
+        "optional": true
+    },
+    "save_samtools": {
+        "description": "Save the output from samtools",
+        "optional": true
+    },
+    "bbmap_minid": {
+        "description": "Minimum identity needed to assign read to a contig",
+        "optional": true
+    },
+    "orf_caller": {
+        "description": "Specify which ORF caller to run. Possible alternatives: prodigal, prokka, transdecoder. This needs to be set unless the --user_orfs_* params are set.",
+        "optional": true
+    },
+    "user_orfs_faa": {
+        "description": "Path to a protein fasta file for user-provided ORFs.",
+        "optional": true
+    },
+    "user_orfs_gff": {
+        "description": "Path to a gff file for user-provided ORFs.",
+        "optional": true
+    },
+    "user_orfs_name": {
+        "description": "Name to give to user-provided ORFs.",
+        "optional": true
+    },
+    "prodigal_trainingfile": {
+        "description": "Specify a training file for prodigal. By default prodigal will learn from the input sequences",
+        "optional": true
+    },
+    "prokka_batchsize": {
+        "description": "Size of individual files annotated by Prokka in one batch.",
+        "optional": true
+    },
+    "skip_eggnog": {
+        "description": "Skip EGGNOG functional annotation",
+        "optional": true
+    },
+    "eggnog_dbpath": {
+        "description": "Specify EGGNOG database path",
+        "optional": true
+    },
+    "skip_kofamscan": {
+        "description": "If enabled, skips the run of KofamScan.",
+        "optional": true
+    },
+    "kofam_dir": {
+        "description": "Path to a directory with KOfam files. Will be created if it doesn't exist.",
+        "optional": true
+    },
+    "hmmdir": {
+        "description": "Directory with hmm files which will be searched for among ORFs",
+        "optional": true
+    },
+    "hmmfiles": {
+        "description": "Comma-separated list of hmm files which will be searched for among ORFs",
+        "optional": true
+    },
+    "hmmpattern": {
+        "description": "Specify which pattern hmm files end with",
+        "optional": true
+    },
+    "diamond_dbs": {
+        "description": "Path to comma-separated file containing information about Diamond database files you want to use for taxonomy assignment.",
+        "optional": true
+    },
+    "diamond_top": {
+        "description": "Argument to Diamond's --top that controls the percentage of hits to include in the LCA.",
+        "optional": true
+    },
+    "skip_eukulele": {
+        "description": "If enabled, skips the run of EUKulele",
+        "optional": true
+    },
+    "eukulele_method": {
+        "description": "Specify which method to use for EUKulele. the alternatives are: mets (metatranscriptomics) or  mags (Metagenome Assembled Genomes). default: mets",
+        "optional": true
+    },
+    "eukulele_db": {
+        "description": "EUKulele database.",
+        "optional": true
+    },
+    "eukulele_dbpath": {
+        "description": "EUKulele database folder.",
+        "optional": true
+    },
+    "custom_config_version": {
+        "description": "Git commit id for Institutional configs.",
+        "optional": true
+    },
+    "custom_config_base": {
+        "description": "Base directory for Institutional configs.",
+        "optional": true
+    },
+    "config_profile_name": {
+        "description": "Institutional config name.",
+        "optional": true
+    },
+    "config_profile_description": {
+        "description": "Institutional config description.",
+        "optional": true
+    },
+    "config_profile_contact": {
+        "description": "Institutional config contact information.",
+        "optional": true
+    },
+    "config_profile_url": {
+        "description": "Institutional config URL link.",
+        "optional": true
+    },
+    "version": {
+        "description": "Display version and exit.",
+        "optional": true
+    },
+    "publish_dir_mode": {
+        "description": "Method used to save pipeline results to output directory.",
+        "optional": true
+    },
+    "email_on_fail": {
+        "description": "Email address for completion summary, only when pipeline fails.",
+        "optional": true
+    },
+    "plaintext_email": {
+        "description": "Send plain-text email instead of HTML.",
+        "optional": true
+    },
+    "max_multiqc_email_size": {
+        "description": "File size limit when attaching MultiQC reports to summary emails.",
+        "optional": true
+    },
+    "monochrome_logs": {
+        "description": "Do not use coloured log outputs.",
+        "optional": true
+    },
+    "hook_url": {
+        "description": "Incoming hook URL for messaging service",
+        "optional": true
+    },
+    "multiqc_config": {
+        "description": "Custom config file to supply to MultiQC.",
+        "optional": true
+    },
+    "multiqc_logo": {
+        "description": "Custom logo file to supply to MultiQC. File name must also be set in the MultiQC config file",
+        "optional": true
+    },
+    "multiqc_methods_description": {
+        "description": "Custom MultiQC yaml file containing HTML including a methods description.",
+        "optional": true
+    },
+    "validate_params": {
+        "description": "Boolean whether to validate parameters against the schema at runtime",
+        "optional": true
+    },
+    "pipelines_testdata_base_path": {
+        "description": "Base URL or local path to location of pipeline test dataset files",
+        "optional": true
+    },
+    "trace_report_suffix": {
+        "description": "Suffix to add to the trace report filename. Default is the date and time in the format yyyy-MM-dd_HH-mm-ss.",
+        "optional": true
+    }
+}
+
+

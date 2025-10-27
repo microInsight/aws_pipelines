@@ -1,0 +1,2 @@
+sample,fastq_1,fastq_2
+sample1,/home/evanbied/Desktop/dev/git_repos/microbial-insights/test_data/fastq_pass/sample1_R1.fastq.gz,/home/evanbied/Desktop/dev/git_repos/microbial-insights/test_data/fastq_pass/sample1_R2.fastq.gz

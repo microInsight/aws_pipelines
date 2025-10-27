@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: >
+  Dynamic infrastructure to run nf-core pipelines on Amazon HealthOmics.
+  Uses a Lambda function to create workflows based on provided configuration.
+
+Parameters:
+  WorkflowConfig:
+    Type: CommaDelimitedList
+    Description: Comma-separated list of workflow configurations in format name:version
+    Default: "mag:4.0.0,metatdenovo:1.2.0"
+
+  DefaultStorageCapacity:
+    Type: Number
+    Description: Default storage capacity in GiB for Omics workflows
+    Default: 100
+    MinValue: 10
+    MaxValue: 9600
+
+  InputBucketName:
+    Type: String
+    Description: Name of the S3 bucket for input data
+
+  OutputBucketName:
+    Type: String
+    Description: Name of the S3 bucket for output data
+
+  CodeBucketName:
+    Type: String
+    Description: Name of the S3 bucket containing workflow bundles
+
+  MaxCpus:
+    Type: Number
+    Default: 256
+    Description: Hard limit on total vCPUs that can be consumed by concurrent runs.
+  
+Resources:
+  #############################################
+  # IAM Roles                                 #
+  #############################################
+  OmicsServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: omics.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: OmicsServicePolicy
+
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:aws:s3:::${InputBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${CodeBucketName}/*'
+                  - !Sub 'arn:aws:s3:::${InputBucketName}'
+                  - !Sub 'arn:aws:s3:::${OutputBucketName}'
+                  - !Sub 'arn:aws:s3:::${CodeBucketName}'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                  - kms:GenerateDataKey
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource: !GetAtt WorkflowConfigTable.Arn
+    
+  # #############################################
+  # # S3 Bucket Policy                         #
+  # #############################################
+  # WorkflowCodeBucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref CodeBucketName
+  #     PolicyDocument:
+  #       Version: '2012-10-17'
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS: !GetAtt OmicsServiceRole.Arn
+  #           Action: s3:GetObject
+
+  #############################################
+  # Omics Resources                          #
+  #############################################
+  DefaultRunGroup:
+    Type: AWS::Omics::RunGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}-default-run-group'
+      MaxCpus: !Ref MaxCpus
+      MaxDuration: 86400
+      Tags:
+        Environment: Production
+        Stack: !Ref AWS::StackName
+
+  #############################################
+  # Lambda to Create Workflows Dynamically    #
+  #############################################
+  CreateWorkflowsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: create-omics-workflows
+      Runtime: python3.12
+      Handler: create-omics-workflows.handler
+      CodeUri: ../lambda_src/
+      Timeout: 300
+      MemorySize: 512
+      Role: !GetAtt CreateWorkflowsLambdaRole.Arn
+
+  CreateWorkflowsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: OmicsWorkflowManagement
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - omics:CreateWorkflow
+                  - omics:DeleteWorkflow
+                  - omics:ListWorkflows
+                  - omics:GetWorkflow
+                  - omics:TagResource
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${CodeBucketName}'
+                  - !Sub 'arn:aws:s3:::${CodeBucketName}/*'
+
+  # Custom Resource to Create Workflows
+  CreateWorkflows:
+    Type: Custom::CreateOmicsWorkflows
+    Properties:
+      ServiceToken: !GetAtt CreateWorkflowsLambda.Arn
+      ServiceTimeout: 60
+      WorkflowConfig: !Ref WorkflowConfig
+      CodeBucketName: !Ref CodeBucketName
+      DefaultStorageCapacity: !Ref DefaultStorageCapacity
+    
+
+  #############################################
+  # DynamoDB Table for Workflow Configuration #
+  #############################################
+  WorkflowConfigTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: omics-workflow-config
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  # Lambda to populate workflow configuration
+  PopulateConfigLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: populate-workflow-config
+      Runtime: python3.12
+      Handler: populate-workflow-config.handler
+      CodeUri: ../lambda_src/
+      Role: !GetAtt PopulateConfigLambdaRole.Arn
+      Timeout: 180
+      Environment:
+        Variables:
+          WORKFLOW_CONFIG: !Join [',', !Ref WorkflowConfig]
+
+  PopulateConfigLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource: !GetAtt WorkflowConfigTable.Arn
+        - PolicyName: OmicsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - omics:ListWorkflows
+                Resource: '*'
+
+  # Custom resource to populate configuration
+  PopulateConfig:
+    Type: Custom::PopulateConfig
+    DependsOn: CreateWorkflows
+    Properties:
+      ServiceToken: !GetAtt PopulateConfigLambda.Arn
+      OmicsRoleArn: !GetAtt OmicsServiceRole.Arn
+      RunGroupId: !GetAtt DefaultRunGroup.Id
+      WorkflowConfig: !Ref WorkflowConfig
+      TableName: !Ref WorkflowConfigTable
+
+Outputs:
+  RunGroupId:
+    Description: Run group ID for workflow executions
+    Value: !GetAtt DefaultRunGroup.Id
+    Export:
+      Name: !Sub '${AWS::StackName}-RunGroupId'
+
+  OmicsRoleArn:
+    Description: ARN of the IAM role for Omics service
+    Value: !GetAtt OmicsServiceRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-OmicsRoleArn'
+
+  WorkflowConfigTableName:
+    Description: Name of the DynamoDB table storing workflow configuration
+    Value: !Ref WorkflowConfigTable
+    Export:
+      Name: WorkflowConfigTableName
+
+  WorkflowCount:
+    Description: Number of workflows configured
+    Value: !GetAtt CreateWorkflows.WorkflowCount
+    
+  CreatedWorkflows:
+    Description: Details of created workflows
+    Value: !GetAtt CreateWorkflows.Workflows

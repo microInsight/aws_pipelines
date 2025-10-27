@@ -1,0 +1,30 @@
+{
+    "manifest": [
+        "quay.io/biocontainers/diamond:2.1.10--h5ca1c30_3",
+        "quay.io/biocontainers/eggnog-mapper:2.1.9--pyhdfd78af_0",
+        "quay.io/biocontainers/eukulele:2.0.5--pyh723bec7_0",
+        "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0",
+        "quay.io/biocontainers/gzip:1.11",
+        "quay.io/biocontainers/hmmer:3.4--hdbdd923_1",
+        "quay.io/biocontainers/mulled-v2-0f92c152b180c7cd39d9b0e6822f8c89ccb59c99:8ec213d21e5d03f9db54898a2baeaf8ec729b447-0",
+        "quay.io/biocontainers/mulled-v2-2e442ba7b07bfa102b9cf8fac6221263cd746ab8:57f05cfa73f769d6ed6d54144cb3aa2a6a6b17e0-0",
+        "quay.io/biocontainers/mulled-v2-b2ec1fea5791d428eebb8c8ea7409c350d31dada:a447f6b7a6afde38352b24c30ae9cd6e39df95c4-1",
+        "quay.io/biocontainers/multiqc:1.29--pyhdfd78af_0",
+        "quay.io/biocontainers/pigz:2.3.4",
+        "quay.io/biocontainers/pigz:2.8",
+        "quay.io/biocontainers/samtools:1.21--h50ea8bc_0",
+        "quay.io/biocontainers/seqtk:1.4--h577a1d6_3",
+        "quay.io/biocontainers/seqtk:1.4--he4a0461_1",
+        "quay.io/biocontainers/subread:2.0.6--he4a0461_2",
+        "quay.io/biocontainers/taxonkit:0.18.0--h9ee0642_0",
+        "quay.io/biocontainers/transdecoder:5.7.1--pl5321hdfd78af_0",
+        "quay.io/biocontainers/transrate:1.0.3--hec16e2b_4",
+        "community.wave.seqera.io/library/bbmap_pigz:07416fe99b090fa9",
+        "community.wave.seqera.io/library/coreutils_grep_gzip_lbzip2_pruned:838ba80435a629f8",
+        "community.wave.seqera.io/library/cutadapt_trim-galore_pigz:a98edd405b34582d",
+        "community.wave.seqera.io/library/prokka_openjdk:10546cadeef11472",
+        "community.wave.seqera.io/library/spades:4.1.0--77799c52e1d1054a",
+        "community.wave.seqera.io/library/wget:1.21.4--8b0fcde81c17be5e",
+        "quay.io/quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2"
+    ]
+}

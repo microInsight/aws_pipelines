@@ -1,0 +1,15 @@
+{
+  "RequestType": "Create",
+  "ResponseURL": "https://cloudformation-custom-resource-response-useast1.s3.amazonaws.com/test",
+  "StackId": "arn:aws:cloudformation:us-east-1:123456789012:stack/test-stack/test-id",
+  "RequestId": "test-request-id",
+  "ResourceType": "Custom::PopulateConfig",
+  "LogicalResourceId": "PopulateConfig",
+  "ResourceProperties": {
+    "ServiceToken": "arn:aws:lambda:us-east-1:123456789012:function:populate-workflow-config",
+    "OmicsRoleArn": "arn:aws:iam::123456789012:role/OmicsServiceRole",
+    "RunGroupId": "test-run-group-id",
+    "WorkflowConfig": ["mag:4.0.0", "metatdenovo:1.2.0"],
+    "TableName": "omics-workflow-config"
+  }
+} 

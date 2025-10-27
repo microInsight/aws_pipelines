@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Setting up the S3 buckets to run nf-core MAG (v3.1.0) and metatdenovo (v1.0.1) and TaxProfiler (v1.2.0)
+  pipelines on Amazon HealthOmics.
+
+##########################
+# ─── Parameters ────────────────────────────────────────────────────────────────
+##########################
+Parameters:
+  InputBucketName:
+    Type: String
+    Description: S3 bucket for raw FASTQ uploads (one sub-folder per run)
+
+  CodeBucketName:
+    Type: String
+    Description: S3 bucket where the zipped pipeline bundles reside.
+
+  OutputBucketName:
+    Type: String
+    Description: S3 bucket that will receive all run outputs & logs.
+
+  EnableNotification:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: Whether to enable the S3 notification to Lambda
+
+##########################
+# ─── Resources ────────────────────────────────────────────────────────────────
+##########################
+Resources:
+  InputFastqBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref InputBucketName
+      VersioningConfiguration:
+        Status: Enabled
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - !If
+            - CreateNotification
+            - Event: s3:ObjectCreated:*
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: suffix
+                      Value: ".json"
+                    - Name: prefix
+                      Value: "*run_manifest"
+              Function: !ImportValue OmicsS3TriggerLambdaArn
+            - !Ref "AWS::NoValue"
+
+  WorkflowCodeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref CodeBucketName
+
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref OutputBucketName
+      VersioningConfiguration:
+        Status: Enabled
+
+##########################
+# ─── Conditions ───────────────────────────────────────────────────────────────
+##########################
+Conditions:
+  CreateNotification: !Equals [!Ref EnableNotification, "true"]
