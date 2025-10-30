@@ -13,14 +13,15 @@ The pipeline is designed to be triggered by the upload of a `run_manifest.json` 
 
 Before you begin, ensure you have the following installed and configured:
 
-1.  **AWS CLI**: Make sure the AWS CLI is installed and configured with credentials for your target AWS account.
-2.  **AWS Profile**: The deployment scripts use an AWS profile named `microbial-insights`. You can either create this profile or update the `AWS_PROFILE` variable in the scripts to match your configuration.
+1. **Linux**: The automations in this makefile only work on a Linux OS.
+2.  **AWS CLI**: Make sure the AWS CLI is installed and configured with credentials for your target AWS account.
+3.  **AWS Profile**: The deployment scripts use an AWS profile named `microbial-insights`. You can either create this profile or update the `AWS_PROFILE` variable in the scripts to match your configuration.
     ```bash
     aws configure --profile microbial-insights
     ```
-3.  **AWS SAM CLI**: The project uses AWS SAM (Serverless Application Model) CLI for building and deploying infrastructure. Install it from https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html and ensure it is available in your PATH.
-4.  **Make**: The project uses a Makefile for automation. Most systems have `make` installed by default.
-5. **Python 3.12**: Ensure Python 3.12 is installed and available in your system PATH. You can download it from https://www.python.org/downloads/ and verify installation with:
+4.  **AWS SAM CLI**: The project uses AWS SAM (Serverless Application Model) CLI for building and deploying infrastructure. Install it from https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html and ensure it is available in your PATH.
+5.  **Make**: The project uses a Makefile for automation. Most systems have `make` installed by default.
+6. **Python 3.12**: Ensure Python 3.12 is installed and available in your system PATH. You can download it from https://www.python.org/downloads/ and verify installation with:
     ```bash
     python3 --version
     ```
