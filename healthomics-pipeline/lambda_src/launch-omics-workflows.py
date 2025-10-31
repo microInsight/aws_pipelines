@@ -1,104 +1,119 @@
 import boto3
-import json
 import os
-from datetime import datetime
-import time
-import random
+import json
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 
-omics = boto3.client('omics')
-s3 = boto3.client('s3')
-dynamodb = boto3.resource('dynamodb')
+omics = boto3.client("omics")
+s3 = boto3.client("s3")
 
-def retry_with_backoff(func, max_retries=5, base_delay=1):
-    """Execute function with exponential backoff retry on throttling errors"""
-    for attempt in range(max_retries):
-        try:
-            return func()
-        except Exception as e:
-            error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', '')
-            if error_code in ['ThrottlingException', 'TooManyRequestsException']:
-                if attempt < max_retries - 1:
-                    # Exponential backoff with jitter
-                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                    print(f"Throttled. Retrying in {delay:.2f} seconds... (attempt {attempt + 1}/{max_retries})")
-                    time.sleep(delay)
-                else:
-                    raise
-            else:
-                raise
+def _utcstamp():
+    return datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
+def _parse_s3_uri(uri: str):
+    """
+    Parse s3://bucket/key into (bucket, key).
+    Raises ValueError for invalid URIs.
+    """
+    if not uri or not uri.startswith("s3://"):
+        raise ValueError(f"Invalid S3 URI: {uri!r}")
+    p = urlparse(uri)
+    bucket = p.netloc
+    key = p.path.lstrip("/")
+    if not bucket or not key:
+        raise ValueError(f"Invalid S3 URI: {uri!r}")
+    return bucket, key
+
+def _load_json_from_s3(uri: str) -> dict:
+    bucket, key = _parse_s3_uri(uri)
+    obj = s3.get_object(Bucket=bucket, Key=key)
+    body = obj["Body"].read()
+    try:
+        return json.loads(body.decode("utf-8"))
+    except Exception as e:
+        raise ValueError(f"param_s3 JSON is invalid ({uri}): {e}")
 
 def handler(event, context):
-    # Get workflow configuration from DynamoDB
-    table = dynamodb.Table(os.environ['CONFIG_TABLE'])
-    config = table.get_item(Key={'id': 'workflows'})['Item']
-    
-    manifest = event['manifest']
-    run_id = manifest['run_id']
-    output_bucket = event['output_bucket']
-    
-    launched_workflows = []
-    
-    # Add delay between workflow launches to avoid throttling
-    # Current quota is 0.1 TPS = 1 request per 10 seconds
-    launch_delay = 10  # seconds between launches
-    
-    # Launch each configured workflow that has a samplesheet
-    for idx, workflow in enumerate(config['workflows']):
-        workflow_name = workflow['name']
-        workflow_arn = workflow['arn']
-        samplesheet_key = f'samplesheet_{workflow_name}.csv'
-        
-        # Check if this workflow should be run
-        if samplesheet_key not in manifest:
-            print(f"No samplesheet found for {workflow_name}, skipping")
-            continue
-        
-        # Add delay between launches (except for the first one)
-        if idx > 0 and launched_workflows:
-            print(f"Waiting {launch_delay} seconds before launching next workflow...")
-            time.sleep(launch_delay)
-        
-        # Prepare parameters
-        print(f"Launching {workflow_name} workflow")
-        params = {
-            'input': f"s3://{event['bucket']}/{run_id}/{samplesheet_key}",
-            'outdir': f"s3://{output_bucket}/{run_id}/{workflow_name}/"
-        }
-        
-        # Start the run with retry logic
-        try:
-            def start_run():
-                return omics.start_run(
-                    workflowId=workflow_arn.split('/')[-1],
-                    name=f"{workflow_name}-{run_id}",
-                    roleArn=config['omics_role'],
-                    parameters=params,
-                    outputUri=f"s3://{output_bucket}/{run_id}/{workflow_name}/",
-                    runGroupId=config['run_group'],
-                    tags={
-                        'run_id': run_id,
-                        'workflow': workflow_name,
-                        'start_time': datetime.now().isoformat()
-                    }
-                )
-            
-            response = retry_with_backoff(start_run)
-            
-            launched_workflows.append({
-                'workflow_name': workflow_name,
-                'run_id': response['id'],
-                'arn': response['arn']
-            })
-            print(f"Successfully launched {workflow_name} workflow")
-        except Exception as e:
-            print(f"Failed to launch {workflow_name}: {str(e)}")
-    
-    if not launched_workflows:
-        raise Exception("No workflows were launched. Check samplesheet availability.")
-    
+    """
+    Launches an Omics workflow run using a parameters DOCUMENT built by
+    merging the provided param_s3 JSON with the samplesheet path.
+
+    Required event keys:
+      - workflow_name
+      - job_name
+      - samplesheet_s3           (s3://... CSV/manifest)
+      - param_s3                 (s3://... JSON)  <-- REQUIRED, loaded & merged
+      - output_bucket            (target S3 bucket for Omics outputUri)
+      - (omics_workflow_id OR omics_workflow_arn)
+
+    Optional event keys:
+      - omics_workflow_version
+      - omics_role
+      - run_group
+    """
+    # --- Extract inputs ---
+    workflow_name   = (event.get("workflow_name") or "").strip()
+    job_name        = (event.get("job_name") or "").strip()
+    samplesheet_s3  = (event.get("samplesheet_s3") or "").strip()
+    param_s3        = (event.get("param_s3") or "").strip()
+    out_bucket      = (event.get("output_bucket") or os.environ.get("OUT_BUCKET") or "").strip()
+
+    wf_id  = (event.get("omics_workflow_id") or "").strip() or None
+
+    role_arn  = (event.get("omics_role") or "").strip() or None
+
+    # --- Validate required fields ---
+    required = {
+        "workflow_name": workflow_name,
+        "job_name": job_name,
+        "samplesheet_s3": samplesheet_s3,
+        "param_s3": param_s3,         
+        "output_bucket": out_bucket,
+        "role_arn": role_arn,
+    }
+    missing = [k for k, v in required.items() if not v]
+    if missing:
+        raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+    if not (wf_id):
+        raise ValueError("Missing workflow reference: provide omics_workflow_id.")
+
+    # --- Build Omics outputUri (no 'outdir' inside parameters) ---
+    output_uri = f"s3://{out_bucket}/{job_name}/{workflow_name}/"
+
+    output_prefix = f"{job_name}/{workflow_name}/"
+
+    # --- Load params DOCUMENT from S3 and inject the input path ---
+    param_doc = _load_json_from_s3(param_s3)
+    # Always ensure 'input' points at the samplesheet provided by the trigger
+    param_doc["input"] = samplesheet_s3
+
+    # --- Prepare Omics start_run arguments ---
+    run_name = f"{workflow_name}-{job_name}-{_utcstamp()}"
+
+    start_args = {
+        "name": run_name,
+        "parameters": param_doc, 
+        "outputUri": output_uri,
+        "storageType": "DYNAMIC",
+    }
+    if wf_id:
+        start_args["workflowId"] = wf_id
+    if role_arn:
+        start_args["roleArn"] = role_arn
+
+    # --- Start the run ---
+    try:
+        resp = omics.start_run(**start_args)
+    except Exception as e:
+        raise RuntimeError(f"Failed to start Omics run for {workflow_name}: {e}")
+
     return {
-        'statusCode': 200,
-        'run_id': run_id,
-        'launched_workflows': launched_workflows,
-        'workflow_count': len(launched_workflows)
+        "statusCode": 200,
+        "workflow": workflow_name,
+        "job_name": job_name,
+        "omics_run_id": resp.get("id"),
+        "output_uri": output_uri,
+        "output_prefix": output_prefix,
+        "parameters_source": param_s3,   # for traceability
     }

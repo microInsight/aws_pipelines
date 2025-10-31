@@ -1,2 +1,2 @@
 sample,fastq_1,fastq_2
-sample1,s3://healthomics-nfcore-input-125434852769/fastq_pass/sample1_R1.fastq.gz,s3://healthomics-nfcore-input-125434852769/fastq_pass/sample1_R2.fastq.gz
+sample1,/home/evanbied/Desktop/dev/git_repos/mic-in-overall/aws_pipelines/test_data/fastq_pass/sample1_R1.fastq.gz,/home/evanbied/Desktop/dev/git_repos/mic-in-overall/aws_pipelines/test_data/fastq_pass/sample1_R2.fastq.gz

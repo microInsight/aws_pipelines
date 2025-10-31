@@ -1,7 +1,7 @@
 # AWS HealthOmics Pipeline Makefile
 # This Makefile provides automation for deploying, testing, and managing the pipeline
 
-.PHONY: all help infrastructure bundles test clean deploy status check-env
+.PHONY: all help infrastructure bundles test clean deploy status check-env upload-samples
 
 # Default AWS settings - can be overridden
 AWS_PROFILE ?= microbial-insights
@@ -191,6 +191,23 @@ test-upload: check-env
 		chmod +x ../../automations/upload_to_s3.sh && \
 		../../automations/upload_to_s3.sh
 	@echo "$(GREEN)✓ Test data uploaded$(NC)"
+
+# Upload new samples for a job using the unified Python script
+upload-samples: check-env
+	@echo "$(BLUE)Uploading samples via unified script...$(NC)"
+	@if [ -z "$(INPUT_BUCKET)" ]; then echo "$(RED)INPUT_BUCKET is required$(NC)"; exit 1; fi
+	@if [ -z "$(SAMPLES_DIR)" ]; then echo "$(RED)SAMPLES_DIR is required$(NC)"; exit 1; fi
+	@python3 automations/manage_samples.py \
+		--samples-dir $(SAMPLES_DIR) \
+		--input-bucket $(INPUT_BUCKET) \
+		--job-name $(or $(JOB_NAME),$(notdir $(SAMPLES_DIR))) \
+		--workflows $(or $(WORKFLOWS),mag metatdenovo) \
+		--mag-params $(MAG_PARAMS) \
+		--metatdenovo-params $(METATDENOVO_PARAMS) \
+		--aws-profile $(AWS_PROFILE) \
+		--region $(AWS_REGION)
+	@echo "$(GREEN)✓ Samples and parameters uploaded$(NC)"
+
 
 test-clean: check-env
 	@echo "$(BLUE)Cleaning test data from S3...$(NC)"
