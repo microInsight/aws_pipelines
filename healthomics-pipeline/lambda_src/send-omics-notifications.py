@@ -33,7 +33,7 @@ def handler(event, context):
     Env: SNS_TOPIC_ARN (required)
     """
     topic_arn = os.environ["SNS_TOPIC_ARN"]
-    omics_run_id = event.get("omics_run_id"),
+    omics_run_id = event.get("omics_run_id")
     if not omics_run_id:
         raise ValueError("Missing required 'omics_run_id' in event")
 
