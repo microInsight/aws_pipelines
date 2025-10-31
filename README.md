@@ -26,6 +26,7 @@ Before you begin, ensure you have the following installed and configured:
     python3 --version
     ```
     The output should show Python 3.12.x.
+7. You must update the workflow bundles and prepare them as zip files in the format nf-core-{**workflow**}_{**version number**}.zip. Follow instructions in this workshop to prep packages: https://catalog.us-east-1.prod.workshops.aws/workshops/76d4a4ff-fe6f-436a-a1c2-f7ce44bc5d17/en-US/workshop/project-setup. You must also upload them to a path exactly as follows: s3://healthomics-nfcore-bundles-125434852769/{**workflow**}/nf-core-{**workflow**}/{**version number**}.zip
 
 ## Uploading Samples and Starting a Run
 
@@ -100,45 +101,21 @@ This will:
 Deploy components separately for more control:
 
 ```bash
-# Step 1: Create workflow bundles locally
-make bundles-create
-
-# Step 2: Deploy S3 buckets only
+# Step 1: Deploy S3 buckets only
 make s3-buckets
 
-# Step 3: Upload bundles to S3 (requires S3 buckets from step 2)
+# Step 2: Upload bundles to S3 (requires S3 buckets from step 2)
 make bundles-upload
 
-# Step 4: Deploy core infrastructure (requires bundles in S3)
+# Step 3: Deploy core infrastructure (requires bundles in S3)
 make core-infrastructure
 
-# Alternative: Use custom workflows with latest versions
-make bundles-create WORKFLOW_REPOS='https://github.com/nf-core/mag,https://github.com/nf-core/ampliseq'
-
-# Alternative: Use specific versions
-make bundles-create WORKFLOW_REPOS='https://github.com/nf-core/mag@2.5.1,https://github.com/nf-core/ampliseq@2.5.0'
 ```
 
 **Note**: The correct order is critical:
-1. **bundles-create**: Creates workflow bundle ZIP files locally
-2. **s3-buckets**: Deploys S3 buckets required for storing bundles and data
-3. **bundles-upload**: Uploads the bundles to the S3 code bucket
-4. **core-infrastructure**: Deploys Omics workflows (which need bundles in S3), DynamoDB, and Step Functions
-
-### Interactive Bundle Management
-
-For interactive workflow bundle creation:
-
-```bash
-make bundles-interactive
-```
-
-3.  **Upload Data**: From the same directory, run:
-    ```bash
-    export INPUT_BUCKET=<your-input-s3-bucket-name>
-    export AWS_PROFILE=<your-aws-profile>
-    /path/to/repository/automations/upload_to_s3.sh
-    ```
+1. **s3-buckets**: Deploys S3 buckets required for storing bundles and data
+2. **bundles-upload**: Uploads the bundles to the S3 code bucket
+3. **core-infrastructure**: Deploys Omics workflows (which need bundles in S3), DynamoDB, and Step Functions
 
 
 ## Monitoring

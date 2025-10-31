@@ -7,7 +7,7 @@ print('Loading function')
 
 omics = boto3.client('omics')
 
-def lambda_handler(event, context):
+def handler(event, context):
     # Log the received event
     print("Received event: " + json.dumps(event, indent=2))
     # Get jobId from the event

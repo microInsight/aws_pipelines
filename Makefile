@@ -10,21 +10,16 @@ SNS_EMAIL1 ?= apartin@microbe.com
 SNS_EMAIL2 ?= operations@microbe.com
 
 # Default workflow repositories - can be overridden
-# Format: comma-separated list of GitHub URLs, optionally with @version
-WORKFLOW_REPOS ?= https://github.com/nf-core/mag@3.1.0,https://github.com/nf-core/metatdenovo@1.0.1,https://github.com/nf-core/taxprofiler@1.2.0
-WORKFLOW_CONFIG := $(shell \
-  echo $(WORKFLOW_REPOS) | \
-  tr ',' '\n' | \
-  sed -E 's|.*/([^/@]+)@([^/]+)|\1:\2|' | \
-  paste -sd, - \
-)
+WORKFLOW_CONFIG := mag:3.4.0,metatdenovo:1.2.0
+
+MAG_BUNDLE := nf-core-mag_3.4.0.zip
+METATDENOVO_BUNDLE := nf-core-metatdenovo_1.2.0.zip
 
 # Export environment variables for scripts
 export AWS_PROFILE
 export AWS_REGION
 export SNS_EMAIL1
 export SNS_EMAIL2
-export WORKFLOW_REPOS
 
 # Get AWS account ID
 ACCOUNT_ID := $(shell aws sts get-caller-identity --profile $(AWS_PROFILE) --query Account --output text 2>/dev/null || echo "000000000000")
@@ -58,15 +53,8 @@ help:
 	@echo "  $(YELLOW)status$(NC)              - Show deployment status"
 	@echo ""
 	@echo "$(GREEN)Bundle Management:$(NC)"
-	@echo "  $(YELLOW)bundles-create$(NC)      - Create workflow bundles from GitHub"
 	@echo "  $(YELLOW)bundles-upload$(NC)      - Upload existing bundles to S3"
 	@echo "  $(YELLOW)bundles-list$(NC)        - List bundles in S3"
-	@echo "  $(YELLOW)bundles-interactive$(NC) - Interactive bundle creation"
-	@echo ""
-	@echo "$(GREEN)Testing Targets:$(NC)"
-	@echo "  $(YELLOW)test-generate$(NC)       - Generate test samplesheets"
-	@echo "  $(YELLOW)test-upload$(NC)         - Upload test data to S3"
-	@echo "  $(YELLOW)test-clean$(NC)          - Clean up test data"
 	@echo ""
 	@echo "$(GREEN)Variables:$(NC)"
 	@echo "  AWS_PROFILE         - AWS profile (default: $(AWS_PROFILE))"
@@ -134,18 +122,13 @@ infrastructure: s3-buckets bundles-upload core-infrastructure s3-notification
 	@echo "$(GREEN)✓ Infrastructure deployment complete$(NC)"
 
 # Manage workflow bundles
-bundles: check-env bundles-create bundles-upload
-
-bundles-create: check-env
-	@echo "$(BLUE)Creating workflow bundles...$(NC)"
-	@chmod +x automations/manage_workflow_bundles.sh
-	@./automations/manage_workflow_bundles.sh create
-	@echo "$(GREEN)✓ Bundle creation complete$(NC)"
+bundles: check-env bundles-upload
 
 bundles-upload: check-env
 	@echo "$(BLUE)Uploading workflow bundles...$(NC)"
-	@chmod +x automations/manage_workflow_bundles.sh
-	@./automations/manage_workflow_bundles.sh upload
+	@python3 automations/upload_workflow_bundles.py --bucket $(CODE_BUCKET) \
+      --map mag=/mag --map metatdenovo=/metatdenovo \
+       $(MAG_BUNDLE) $(METATDENOVO_BUNDLE) 
 	@echo "$(GREEN)✓ Bundle upload complete$(NC)"
 
 bundles-list: check-env
@@ -153,18 +136,13 @@ bundles-list: check-env
 	@chmod +x automations/manage_workflow_bundles.sh
 	@./automations/manage_workflow_bundles.sh list
 
-bundles-interactive: check-env
-	@echo "$(BLUE)Starting interactive bundle management...$(NC)"
-	@chmod +x automations/manage_workflow_bundles.sh
-	@./automations/manage_workflow_bundles.sh interactive
-
 # Full deployment
-deploy: bundles-create s3-buckets bundles-upload core-infrastructure s3-notification
+deploy: s3-buckets bundles-upload core-infrastructure s3-notification
 	@echo "$(GREEN)✓ Full deployment complete!$(NC)"
 	@echo ""
 	@echo "$(BLUE)Next steps:$(NC)"
-	@echo "1. Run 'make test' to test the pipeline with sample data"
-	@echo "2. Use 'make status' to check deployment status"
+	@echo "1. Run 'make upload-samples SAMPLES_DIR=path/to/samples' to upload your samples."
+	@echo "2. Monitor the pipeline execution in the AWS Step Functions console."
 
 destroy: check-env
 	@echo "$(BLUE)Destroying infrastructure...$(NC)"
@@ -188,51 +166,6 @@ upload-samples: check-env
 		--region $(AWS_REGION)
 	@echo "$(GREEN)✓ Samples and parameters uploaded$(NC)"
 
-# Show deployment status
-status: check-env
-	@echo "$(BLUE)Deployment Status$(NC)"
-	@echo "$(YELLOW)=================$(NC)"
-	@echo ""
-	@echo "$(GREEN)S3 Buckets:$(NC)"
-	@echo "  Input:  s3://$(INPUT_BUCKET)"
-	@echo "  Output: s3://$(OUTPUT_BUCKET)"
-	@echo "  Code:   s3://$(CODE_BUCKET)"
-	@echo ""
-	@echo "$(GREEN)CloudFormation Stacks:$(NC)"
-	@aws cloudformation describe-stacks --profile $(AWS_PROFILE) --region $(AWS_REGION) \
-		--query "Stacks[?contains(StackName, 'healthomics')].{Name:StackName,Status:StackStatus}" \
-		--output table 2>/dev/null || echo "  No stacks found"
-	@echo ""
-	@echo "$(GREEN)Workflow Bundles in S3:$(NC)"
-	@aws s3 ls s3://$(CODE_BUCKET)/ --recursive --profile $(AWS_PROFILE) | grep -E "\.zip$$" | wc -l | xargs echo "  Total bundles:"
-	@echo ""
-	@echo "$(GREEN)Recent Step Functions Executions:$(NC)"
-	@STATE_MACHINE_ARN=$$(aws cloudformation describe-stacks \
-		--stack-name healthomics-stepfunctions-pipeline \
-		--query "Stacks[0].Outputs[?OutputKey=='StateMachineArn'].OutputValue" \
-		--output text --profile $(AWS_PROFILE) --region $(AWS_REGION) 2>/dev/null); \
-	if [ -n "$$STATE_MACHINE_ARN" ]; then \
-		aws stepfunctions list-executions \
-			--state-machine-arn "$$STATE_MACHINE_ARN" \
-			--max-items 5 \
-			--profile $(AWS_PROFILE) \
-			--region $(AWS_REGION) \
-			--query "executions[].{Name:name,Status:status,StartDate:startDate}" \
-			--output table 2>/dev/null || echo "  No executions found"; \
-	else \
-		echo "  State machine not deployed"; \
-	fi
-
-# Clean up all resources
-clean: check-env
-	@echo "$(RED)WARNING: This will delete all AWS resources!$(NC)"
-	@echo "Press Ctrl+C within 10 seconds to cancel..."
-	@sleep 10
-	@echo "$(BLUE)Starting cleanup...$(NC)"
-	@chmod +x automations/cleanup_pipeline.sh
-	@./automations/cleanup_pipeline.sh
-	@echo "$(GREEN)✓ Cleanup complete$(NC)"
-
 # Validate templates
 validate: check-env
 	@echo "$(BLUE)Validating CloudFormation templates...$(NC)"
@@ -251,32 +184,3 @@ validate: check-env
 		--profile $(AWS_PROFILE) \
 		--region $(AWS_REGION) >/dev/null && \
 		echo "$(GREEN)✓ stepfunctions-omics-pipeline.yml$(NC)"
-
-# Show logs for recent executions
-logs: check-env
-	@echo "$(BLUE)Recent execution logs...$(NC)"
-	@STATE_MACHINE_ARN=$$(aws cloudformation describe-stacks \
-		--stack-name healthomics-stepfunctions-pipeline \
-		--query "Stacks[0].Outputs[?OutputKey=='StateMachineArn'].OutputValue" \
-		--output text --profile $(AWS_PROFILE) --region $(AWS_REGION) 2>/dev/null); \
-	if [ -n "$$STATE_MACHINE_ARN" ]; then \
-		EXECUTION_ARN=$$(aws stepfunctions list-executions \
-			--state-machine-arn "$$STATE_MACHINE_ARN" \
-			--max-items 1 \
-			--profile $(AWS_PROFILE) \
-			--region $(AWS_REGION) \
-			--query "executions[0].executionArn" \
-			--output text 2>/dev/null); \
-		if [ -n "$$EXECUTION_ARN" ] && [ "$$EXECUTION_ARN" != "None" ]; then \
-			aws stepfunctions get-execution-history \
-				--execution-arn "$$EXECUTION_ARN" \
-				--profile $(AWS_PROFILE) \
-				--region $(AWS_REGION) \
-				--query "events[-10:].{Time:timestamp,Type:type,Details:details}" \
-				--output table; \
-		else \
-			echo "No executions found"; \
-		fi \
-	else \
-		echo "State machine not deployed"; \
-	fi 
