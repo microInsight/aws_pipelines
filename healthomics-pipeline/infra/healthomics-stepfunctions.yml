@@ -205,7 +205,7 @@ Resources:
             },
             "Wait X Seconds": {
               "Type": "Wait",
-              "Seconds": "300",
+              "Seconds": 300,
               "Next": "Get Job Status"
             },
             "Get Job Status": {
