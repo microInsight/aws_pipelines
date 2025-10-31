@@ -17,7 +17,7 @@ def handler(event, context):
         # Call get_run
         response = omics.get_run(id=omics_run_id)
         # Log response from AWS Omics
-        print("Response: " + json.dumps(response, indent=2))
+        print(response)
         # Return the jobtatus
         job_status = response['status']
         return job_status
