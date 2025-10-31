@@ -187,6 +187,8 @@ def handler(event, context):
                 }
             }
 
+            print(f"Starting Step Functions execution for workflow {wf} with params: {json.dumps(step_params, indent=2)}")
+
             # Step Functions requires input to be JSON-encoded string
             step_params['input'] = json.dumps(step_params['input'])
 

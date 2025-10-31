@@ -172,26 +172,6 @@ destroy: check-env
 	@sam delete --stack-name healthomics-head-template
 	@echo "$(GREEN)✓ Infrastructure destroyed$(NC)"
 
-# Test pipeline
-test: test-generate test-upload
-	@echo "$(GREEN)✓ Test data uploaded. Pipeline will start automatically.$(NC)"
-	@echo "Monitor progress in the Step Functions console"
-
-test-generate:
-	@echo "$(BLUE)Generating test samplesheets...$(NC)"
-	@cd test_data/fastq_pass && \
-		chmod +x ../../automations/generate_samplesheets.sh && \
-		../../automations/generate_samplesheets.sh mag metatdenovo
-	@echo "$(GREEN)✓ Samplesheets generated$(NC)"
-
-test-upload: check-env
-	@echo "$(BLUE)Uploading test data to S3...$(NC)"
-	@cd test_data/fastq_pass && \
-		export INPUT_BUCKET=$(INPUT_BUCKET) && \
-		chmod +x ../../automations/upload_to_s3.sh && \
-		../../automations/upload_to_s3.sh
-	@echo "$(GREEN)✓ Test data uploaded$(NC)"
-
 # Upload new samples for a job using the unified Python script
 upload-samples: check-env
 	@echo "$(BLUE)Uploading samples via unified script...$(NC)"
@@ -207,15 +187,6 @@ upload-samples: check-env
 		--aws-profile $(AWS_PROFILE) \
 		--region $(AWS_REGION)
 	@echo "$(GREEN)✓ Samples and parameters uploaded$(NC)"
-
-
-test-clean: check-env
-	@echo "$(BLUE)Cleaning test data from S3...$(NC)"
-	@aws s3 rm s3://$(INPUT_BUCKET)/run_manifest.json --profile $(AWS_PROFILE) 2>/dev/null || true
-	@aws s3 rm s3://$(INPUT_BUCKET)/samplesheet_mag.csv --profile $(AWS_PROFILE) 2>/dev/null || true
-	@aws s3 rm s3://$(INPUT_BUCKET)/samplesheet_metatdenovo.csv --profile $(AWS_PROFILE) 2>/dev/null || true
-	@aws s3 rm s3://$(INPUT_BUCKET)/fastq/ --recursive --profile $(AWS_PROFILE) 2>/dev/null || true
-	@echo "$(GREEN)✓ Test data cleaned$(NC)"
 
 # Show deployment status
 status: check-env

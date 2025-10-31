@@ -87,6 +87,7 @@ def handler(event, context):
     param_doc = _load_json_from_s3(param_s3)
     # Always ensure 'input' points at the samplesheet provided by the trigger
     param_doc["input"] = samplesheet_s3
+    param_doc["outdir"] = output_uri
 
     # --- Prepare Omics start_run arguments ---
     run_name = f"{workflow_name}-{job_name}-{_utcstamp()}"

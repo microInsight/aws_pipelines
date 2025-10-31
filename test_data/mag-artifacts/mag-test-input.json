@@ -6,7 +6,5 @@
     "spadeshybrid_fix_cpus": 4,
     "spades_options": "--tmp-dir /tmp",
     "busco_db": "s3://healthomics-nfcore-bundles-125434852769/busco/bacteria_odb10.2024-01-08.tar.gz",
-    "busco_auto_lineage_prok": true,
-    "prokka_with_compliance": true,
-    "prokka_compliance_centre": "NFC"
+    "busco_auto_lineage_prok": true
 }         

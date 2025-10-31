@@ -27,20 +27,58 @@ Before you begin, ensure you have the following installed and configured:
     ```
     The output should show Python 3.12.x.
 
-## Quick Start
+## Uploading Samples and Starting a Run
+
+The pipeline is now managed through a single unified entrypoint using the `manage_samples.py` automation.
+
+You can upload new samples, generate sample sheets, and register a new run with HealthOmics using the Make target `upload-samples`.
+
+### Make Target
+
+```makefile
+# Upload new samples for a job using the unified Python script
+upload-samples: check-env
+	@echo "$(BLUE)Uploading samples via unified script...$(NC)"
+	@if [ -z "$(INPUT_BUCKET)" ]; then echo "$(RED)INPUT_BUCKET is required$(NC)"; exit 1; fi
+	@if [ -z "$(SAMPLES_DIR)" ]; then echo "$(RED)SAMPLES_DIR is required$(NC)"; exit 1; fi
+	@python3 automations/manage_samples.py \
+		--samples-dir $(SAMPLES_DIR) \
+		--input-bucket $(INPUT_BUCKET) \
+		--job-name $(or $(JOB_NAME),$(notdir $(SAMPLES_DIR))) \
+		--workflows $(or $(WORKFLOWS),mag metatdenovo) \
+		--mag-params $(MAG_PARAMS) \
+		--metatdenovo-params $(METATDENOVO_PARAMS) \
+		--aws-profile $(AWS_PROFILE) \
+		--region $(AWS_REGION)
+	@echo "$(GREEN)✓ Samples and parameters uploaded$(NC)"
+```
+
+### Usage Example with Test Data
+
+```bash
+make upload-samples \
+  SAMPLES_DIR=./test_data/fastq_pass \
+  JOB_NAME=run_01 \
+  MAG_PARAMS=./test_data/mag-artifacts/mag-test-input.json \ # must be in the formate mag-*.json
+  METATDENOVO_PARAMS=./test_data/meta-artifacts/metatdenovo-test-input.json # must be in format metatdenovo-*.json
+```
+
+This command will:
+
+* Generate `samplesheet_mag.csv` and `samplesheet_metatdenovo.csv`
+* Upload all FASTQ files, both CSVs, the `run_manifest.json`, and both parameter JSONs to
+  `s3://$(INPUT_BUCKET)/$(JOB_NAME)/`
+* Initiate the run for submission through Step Functions or AWS HealthOmics. The run_manifest.json upload triggers the start of the job.
+
+## Deployment Options (no need to run unless updates are made)
+
+### Quick Start 
 
 ```bash
 # Deploy everything (infrastructure + workflow bundles)
 make deploy
 
-# Run tests with sample data
-make test
-
-# Check deployment status
-make status
 ```
-
-## Deployment Options
 
 ### Full Deployment (Recommended)
 
@@ -95,18 +133,6 @@ For interactive workflow bundle creation:
 make bundles-interactive
 ```
 
-## Running the Pipeline
-
-To run the pipeline with your data:
-
-1.  **Place FASTQ Files**: Place your paired-end FASTQ files (e.g., `sample1_R1.fastq.gz`, `sample1_R2.fastq.gz`) in a directory.
-
-2.  **Generate Samplesheets**: Navigate to the directory containing your FASTQ files and run:
-    ```bash
-    # From your FASTQ directory
-    /path/to/repository/automations/generate_samplesheets.sh
-    ```
-
 3.  **Upload Data**: From the same directory, run:
     ```bash
     export INPUT_BUCKET=<your-input-s3-bucket-name>
@@ -114,19 +140,6 @@ To run the pipeline with your data:
     /path/to/repository/automations/upload_to_s3.sh
     ```
 
-## Testing
-
-Test the pipeline with included sample data:
-
-```bash
-# Run full test (generate samplesheets + upload)
-make test
-
-# Or run test steps separately
-make test-generate  # Generate samplesheets
-make test-upload    # Upload to S3
-make test-clean     # Clean up test data
-```
 
 ## Monitoring
 
@@ -135,9 +148,6 @@ Check the status of your deployment and pipeline runs:
 ```bash
 # Show deployment status
 make status
-
-# View recent execution logs
-make logs
 
 # List workflow bundles in S3
 make bundles-list
@@ -148,29 +158,35 @@ Monitor pipeline execution in the AWS Management Console:
 -   **AWS Step Functions**: View the execution graph and logs
 -   **AWS HealthOmics**: View individual workflow run status and results
 
+
 ## Makefile Targets
 
 | Target | Description |
-|--------|-------------|
-| `make deploy` | Full deployment (infrastructure + bundles) |
-| `make infrastructure` | Deploy AWS infrastructure only |
-| `make bundles` | Create and upload workflow bundles |
-| `make test` | Run pipeline with test data |
-| `make status` | Show deployment status |
-| `make clean` | Remove all AWS resources |
-| `make validate` | Validate CloudFormation templates |
-| `make logs` | Show recent execution logs |
-| `make help` | Show all available targets |
+|---|---|
+| `all` |  |
+| `bundles` |  |
+| `check-env` |  |
+| `clean` |  |
+| `deploy` |  |
+| `help` |  |
+| `infrastructure` |  |
+| `status` |  |
+| `upload-samples` |  |
 
-### Bundle Management
+### Make Variables (selected)
 
-| Target | Description |
-|--------|-------------|
-| `make bundles-create` | Create bundles from GitHub |
-| `make bundles-upload` | Upload existing bundles |
-| `make bundles-list` | List bundles in S3 |
-| `make bundles-interactive` | Interactive bundle creation |
-
+| Variable | Default |
+|---|---|
+| `AWS_PROFILE` | `microbial-insights` |
+| `AWS_REGION` | `us-east-1` |
+| `SNS_EMAIL1` | `apartin@microbe.com` |
+| `SNS_EMAIL2` | `operations@microbe.com` |
+| `WORKFLOW_REPOS` | `https://github.com/nf-core/mag@3.1.0,https://github.com/nf-core/metatdenovo@1.0.1,https://github.com/nf-core/taxprofiler@1.2.0` |
+| `WORKFLOW_CONFIG` | `$(shell \` |
+| `ACCOUNT_ID` | `$(shell aws sts get-caller-identity --profile $(AWS_PROFILE) --query Account --output text 2>/dev/null || echo "000000000000")` |
+| `INPUT_BUCKET` | `healthomics-nfcore-input-$(ACCOUNT_ID)` |
+| `OUTPUT_BUCKET` | `healthomics-nfcore-output-$(ACCOUNT_ID)` |
+| `CODE_BUCKET` | `healthomics-nfcore-bundles-$(ACCOUNT_ID)` |
 ## Configuration
 
 ### Environment Variables
@@ -253,12 +269,8 @@ make validate
 
 ### Scripts (automations/)
 
-- **Makefile**: Main automation interface
-- **automations/deploy_infrastructure.sh**: Deploys AWS infrastructure
+- **automations/manage_samples.py**: uploads parameter files, creates and upload samplesheets and run manifests.
 - **automations/manage_workflow_bundles.sh**: Creates and uploads workflow bundles
-- **automations/cleanup_pipeline.sh**: Removes all AWS resources
-- **automations/generate_samplesheets.sh**: Generates pipeline samplesheets
-- **automations/upload_to_s3.sh**: Uploads data and triggers pipeline
 
 ### CloudFormation Templates (infra/)
 
@@ -268,30 +280,5 @@ make validate
 
 ### Directories
 
-- **lambda_src/**: Lambda function source code
+- **healthomics/lambda_src/**: Lambda function source code
 - **test_data/**: Sample FASTQ files for testing
-
-## Advanced Usage
-
-### Custom Workflows
-
-Add custom nf-core workflows:
-
-```bash
-# Set custom repositories
-export WORKFLOW_REPOS='https://github.com/your-org/custom-workflow'
-
-# Create and upload bundles
-make bundles
-```
-
-### Direct Script Usage
-
-Use scripts directly for more control:
-
-```bash
-# Bundle management
-./automations/manage_workflow_bundles.sh create
-./automations/manage_workflow_bundles.sh upload
-./automations/manage_workflow_bundles.sh list
-```

@@ -113,14 +113,12 @@ def upload_extra_files(session, bucket: str, job_name: str, files: list):
             continue
         p = Path(f)
         if not p.exists():
-            print(f"WARNING: parameter file not found: {p}")
-            continue
+            raise SystemExit(f"ERROR: parameter does not exist: {p}")
         if p.suffix.lower() == ".json":
             try:
                 _ = _json.loads(p.read_text())
             except Exception as e:
-                print(f"WARNING: skipping upload (invalid JSON): {p} -> {e}")
-                continue
+                raise SystemExit(f"ERROR: invalid JSON for parameter file: {p} -> {e}")
         s3.upload_file(str(p), bucket, f"{job_name}/{p.name}")
         print(f"Uploaded parameter file to s3://{bucket}/{job_name}/{p.name}")
 
