@@ -1,4 +1,0 @@
-pytest
-boto3
-requests
-moto[dynamodb,s3,sns,sts,cloudformation]

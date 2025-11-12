@@ -5,5 +5,5 @@
     "eukulele_db": "gtdb",
     "eukulele_dbpath": "s3://healthomics-nfcore-bundles-125434852769/gtdb/",
     "eggnog_dbpath": "s3://healthomics-nfcore-bundles-125434852769/eggnog/",
-    "kofamscan_dir": "s3://healthomics-nfcore-bundles-125434852769/kofam/"
+    "kofam_dir": "s3://healthomics-nfcore-bundles-125434852769/kofam/"
 }

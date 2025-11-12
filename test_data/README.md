@@ -1,4 +1,4 @@
-## AWS HealthOmics: Submitting nf-core MAG and metatdenovo Pipelines
+## Manual Submitting nf-core MAG and metatdenovo Pipelines
 
 This guide walks you through preparing inputs, uploading sample data to Amazon S3, and submitting runs to AWS HealthOmics for both the nf-core MAG and metatdenovo pipelines. It also covers monitoring runs and retrieving outputs.
 

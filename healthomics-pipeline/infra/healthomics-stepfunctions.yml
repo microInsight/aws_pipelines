@@ -108,6 +108,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:ListBucket
+                  - s3:PutObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${InputBucketName}
                   - !Sub arn:${AWS::Partition}:s3:::${InputBucketName}/*
@@ -177,62 +178,96 @@ Resources:
       RoleArn: !GetAtt StepFunctionsRole.Arn
       DefinitionString: !Sub |
         {
-          "Comment": "Orchestrates dynamic HealthOmics workflows with polling and notifications",
-          "StartAt": "LaunchWorkflows",
+          "Comment": "Orchestrates dynamic HealthOmics workflows with polling and notifications.",
+          "StartAt": "Submit Job",
+          "QueryLanguage": "JSONata",
           "States": {
-            "LaunchWorkflows": {
+            "Submit Job": {
               "Type": "Task",
-              "Resource": "${LaunchWorkflowsLambda.Arn}",
-              "Next": "CheckIfAnyLaunched",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${LaunchWorkflowsLambda.Arn}",
+                "Payload": "{% $states.input %}"
+              },
+              "Output": "{% $merge([$states.input, $states.result.Payload]) %}",
               "Retry": [
                 {
-                  "ErrorEquals": ["States.TaskFailed"],
-                  "IntervalSeconds": 2,
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 1,
                   "MaxAttempts": 3,
-                  "BackoffRate": 2
-                }
-              ]
-            },
-            "CheckIfAnyLaunched": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.workflow_count",
-                  "NumericGreaterThan": 0,
-                  "Next": "WaitForPolling"
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
                 }
               ],
-              "Default": "NoWorkflowsLaunched"
+              "Next": "Wait X Seconds"
             },
-            "NoWorkflowsLaunched": {
-              "Type": "Fail",
-              "Error": "NoWorkflowsLaunched",
-              "Cause": "No workflows were launched. Check if samplesheets exist for configured workflows."
-            },
-            "WaitForPolling": {
+            "Wait X Seconds": {
               "Type": "Wait",
               "Seconds": 300,
-              "Next": "PollWorkflowStatus"
+              "Next": "Get Job Status"
             },
-            "PollWorkflowStatus": {
+            "Get Job Status": {
               "Type": "Task",
-              "Resource": "${PollWorkflowsLambda.Arn}",
-              "Next": "CheckCompletion"
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${PollWorkflowsLambda.Arn}",
+                "Payload": {
+                  "omics_run_id": "{% $states.input.omics_run_id %}"
+                }
+              },
+              "Output": "{% $merge([$states.input, {'status': $states.result.Payload}]) %}",
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "Next": "Job Complete?"
             },
-            "CheckCompletion": {
+            "Job Complete?": {
               "Type": "Choice",
               "Choices": [
                 {
-                  "Variable": "$.all_complete",
-                  "BooleanEquals": true,
-                  "Next": "SendNotification"
+                  "Next": "Job Response Failed",
+                  "Condition": "{% $states.input.status = 'FAILED' %}"
+                },
+                {
+                  "Next": "Job Response Succeeded",
+                  "Condition": "{% $states.input.status = 'SUCCEEDED' %}"
                 }
               ],
-              "Default": "WaitForPolling"
+              "Default": "Wait X Seconds"
             },
-            "SendNotification": {
+            "Job Response Failed": {
               "Type": "Task",
-              "Resource": "${SendNotificationLambda.Arn}",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${SendNotificationLambda.Arn}",
+                "Payload": "{% $states.input %}"
+              },
+              "Output": "{% $states.result.Payload %}",
+              "Next": "Job Failed"
+            },
+            "Job Failed": {
+              "Type": "Fail",
+              "Cause": "AWS Omics Job Failed",
+              "Error": "DescribeJob returned FAILED"
+            },
+            "Job Response Succeeded": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "${SendNotificationLambda.Arn}",
+                "Payload": "{% $states.input %}"
+              },
+              "Output": "{% $states.result.Payload %}",
               "End": true
             }
           }
@@ -252,6 +287,7 @@ Resources:
         Variables:
           STATE_MACHINE_ARN: !Ref OmicsPipelineStateMachine
           OUT_BUCKET: !Ref OutputBucketName
+          WORKFLOWS_TABLE: !Ref WorkflowConfigTableName
 
   # IAM Role for S3 Trigger Lambda
   S3TriggerLambdaRole:
@@ -280,6 +316,19 @@ Resources:
                 Action:
                   - states:StartExecution
                 Resource: !Ref OmicsPipelineStateMachine
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${WorkflowConfigTableName}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${InputBucketName}
+                  - !Sub arn:${AWS::Partition}:s3:::${InputBucketName}/*
 
   # S3 Lambda Permission
   S3InvokeLambdaPermission:

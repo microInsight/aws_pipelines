@@ -47,9 +47,7 @@ Resources:
                 S3Key:
                   Rules:
                     - Name: suffix
-                      Value: ".json"
-                    - Name: prefix
-                      Value: "*run_manifest"
+                      Value: "run_manifest.json"
               Function: !ImportValue OmicsS3TriggerLambdaArn
             - !Ref "AWS::NoValue"
 
