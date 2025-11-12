@@ -63,10 +63,6 @@
             "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/multiqc:1.29--pyhdfd78af_0"
         }, 
         {
-            "sourceImage": "community.wave.seqera.io/library/coreutils_grep_gzip_lbzip2_pruned:838ba80435a629f8", 
-            "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/community.wave.seqera/library/coreutils_grep_gzip_lbzip2_pruned:838ba80435a629f8"
-        }, 
-        {
             "sourceImage": "quay.io/biocontainers/pigz:2.3.4", 
             "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/pigz:2.3.4"
         }, 
