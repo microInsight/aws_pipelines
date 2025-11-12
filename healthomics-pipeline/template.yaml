@@ -1,50 +1,53 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
+Description: |
   healthomics-pipeline
-
   Sample SAM Template for healthomics-pipeline
 
 Parameters:
   InputBucketName:
     Type: String
-    Default: "healthomics-nfcore-input"
+    Default: healthomics-nfcore-input
     Description: Name of the S3 bucket for input data
 
   OutputBucketName:
     Type: String
-    Default: "healthomics-nfcore-output"
+    Default: healthomics-nfcore-output
     Description: Name of the S3 bucket for output data
 
   CodeBucketName:
     Type: String
-    Default: "healthomics-nfcore-bundles"
+    Default: healthomics-nfcore-bundles
     Description: Name of the S3 bucket containing workflow bundles
-  
+
   FirstPass:
     Type: String
-    Default: "true"
+    Default: 'true'
     AllowedValues:
-      - "true"
-      - "false"
-    Description: Whether to run the first pass of the pipeline, which only creates the s3 buckets. Run manage_workflow_bundles.sh to upload the workflow bundles before continuing.
+      - 'true'
+      - 'false'
+    Description: Whether to run the first pass of the pipeline, which only creates
+      the s3 buckets. Run manage_workflow_bundles.sh to upload the workflow
+      bundles before continuing.
 
   SecondPass:
     Type: String
-    Default: "false"
+    Default: 'false'
     AllowedValues:
-      - "true"
-      - "false"
-    Description: Whether to run the second pass of the pipeline, which creates the step functions and lambda functions.
+      - 'true'
+      - 'false'
+    Description: Whether to run the second pass of the pipeline, which creates the
+      step functions and lambda functions.
 
   ThirdPass:
     Type: String
-    Default: "false"
+    Default: 'false'
     AllowedValues:
-      - "true"
-      - "false"
-    Description: Whether to run the third pass of the pipeline, which creates the s3 notification to Lambda.
- 
+      - 'true'
+      - 'false'
+    Description: Whether to run the third pass of the pipeline, which creates the s3
+      notification to Lambda.
+
   WorkflowConfig:
     Type: String
     Description: Comma-separated list of workflow configurations in format name:version
@@ -64,64 +67,56 @@ Parameters:
   SNSTopicEmail1:
     Type: String
     Description: First email address for workflow completion notifications
-    Default: ""
-  
+    Default: ''
+
   SNSTopicEmail2:
     Type: String
     Description: Second email address for workflow completion notifications (optional)
-    Default: ""
+    Default: ''
 
 Conditions:
-  FirstPassCondition: !Equals [!Ref FirstPass, "true"]
-  SecondPassCondition: !Equals [!Ref SecondPass, "true"]
-  ThirdPassCondition: !Equals [!Ref ThirdPass, "true"]
+  FirstPassCondition: !Equals
+    - !Ref FirstPass
+    - 'true'
+  SecondPassCondition: !Equals
+    - !Ref SecondPass
+    - 'true'
+  ThirdPassCondition: !Equals
+    - !Ref ThirdPass
+    - 'true'
 
 Resources:
-    HealthOmicsS3:
-      Type: AWS::Serverless::Application
-      Condition: FirstPassCondition
-      Properties:
-        Location: infra/healthomics-s3.yml
-        Parameters:
-          InputBucketName:
-            !Sub "${InputBucketName}-${AWS::AccountId}"
-          CodeBucketName:
-            !Sub "${CodeBucketName}-${AWS::AccountId}"
-          OutputBucketName:
-            !Sub "${OutputBucketName}-${AWS::AccountId}"
-          EnableNotification:
-            !Ref ThirdPass # this should be enabled last so that the lambda can be created
-    HealthOmicsNfcore:
-      Type: AWS::Serverless::Application
-      Condition: SecondPassCondition
-      Properties:
-        Location: infra/healthomics-nfcore.yml
-        Parameters:
-          WorkflowConfig:
-            !Ref WorkflowConfig
-          DefaultStorageCapacity:
-            !Ref DefaultStorageCapacity
-          InputBucketName:
-            !Sub "${InputBucketName}-${AWS::AccountId}"
-          OutputBucketName:
-            !Sub "${OutputBucketName}-${AWS::AccountId}"
-          CodeBucketName:
-            !Sub "${CodeBucketName}-${AWS::AccountId}"
-          MaxCpus:
-            !Ref MaxCpus
-      DependsOn: HealthOmicsS3
-    HealthOmicsStepFunctions:
-      Type: AWS::Serverless::Application
-      Condition: SecondPassCondition
-      Properties:
-        Location: infra/healthomics-stepfunctions.yml
-        Parameters:
-          InputBucketName: 
-            !Sub "${InputBucketName}-${AWS::AccountId}"
-          OutputBucketName: 
-            !Sub "${OutputBucketName}-${AWS::AccountId}"
-          SNSTopicEmail1: 
-            !Ref SNSTopicEmail1
-          SNSTopicEmail2: 
-            !Ref SNSTopicEmail2
-      DependsOn: HealthOmicsNfcore
+  HealthOmicsS3:
+    Type: AWS::Serverless::Application
+    Condition: FirstPassCondition
+    Properties:
+      Location: infra/healthomics-s3.yml
+      Parameters:
+        InputBucketName: !Sub ${InputBucketName}-${AWS::AccountId}
+        CodeBucketName: !Sub ${CodeBucketName}-${AWS::AccountId}
+        OutputBucketName: !Sub ${OutputBucketName}-${AWS::AccountId}
+        EnableNotification: !Ref ThirdPass # this should be enabled last so that the lambda can be created
+  HealthOmicsNfcore:
+    Type: AWS::Serverless::Application
+    Condition: SecondPassCondition
+    Properties:
+      Location: infra/healthomics-nfcore.yml
+      Parameters:
+        WorkflowConfig: !Ref WorkflowConfig
+        DefaultStorageCapacity: !Ref DefaultStorageCapacity
+        InputBucketName: !Sub ${InputBucketName}-${AWS::AccountId}
+        OutputBucketName: !Sub ${OutputBucketName}-${AWS::AccountId}
+        CodeBucketName: !Sub ${CodeBucketName}-${AWS::AccountId}
+        MaxCpus: !Ref MaxCpus
+    DependsOn: HealthOmicsS3
+  HealthOmicsStepFunctions:
+    Type: AWS::Serverless::Application
+    Condition: SecondPassCondition
+    Properties:
+      Location: infra/healthomics-stepfunctions.yml
+      Parameters:
+        InputBucketName: !Sub ${InputBucketName}-${AWS::AccountId}
+        OutputBucketName: !Sub ${OutputBucketName}-${AWS::AccountId}
+        SNSTopicEmail1: !Ref SNSTopicEmail1
+        SNSTopicEmail2: !Ref SNSTopicEmail2
+    DependsOn: HealthOmicsNfcore

@@ -1,0 +1,12 @@
+{
+    "registryMappings": [
+        {
+            "upstreamRegistryUrl": "quay.io",
+            "ecrRepositoryPrefix": "quay"
+        },
+        {
+            "upstreamRegistryUrl": "public.ecr.aws",
+            "ecrRepositoryPrefix": "ecr-public"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowPTCinRegPermissions",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "omics.amazonaws.com"
+            },
+            "Action": [
+                "ecr:CreateRepository",
+                "ecr:BatchImportUpstreamImage"
+            ],
+            "Resource": [
+                "arn:aws:ecr:us-east-1:125434852769:repository/docker-hub/*",
+                "arn:aws:ecr:us-east-1:125434852769:repository/quay/*",
+                "arn:aws:ecr:us-east-1:125434852769:repository/ecr-public/*"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+{
+    "input": "s3://healthomics-nfcore-input-125434852769/meta-test-1/samplesheet.csv",
+    "multiqc_title": "meta-test",
+    "assembler": "megahit",
+    "skip_eukulele": true,
+    "skip_eggnog": false,
+    "skip_kofamscan": true
+}
