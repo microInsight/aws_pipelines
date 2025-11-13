@@ -98,6 +98,12 @@
                     "help_text": "By default, trimmed FastQ files will not be saved to the results directory. Specify this flag (or set to true in your config file) to copy these files to the results directory when complete.",
                     "fa_icon": "fas fa-cut"
                 },
+                "trim_nextseq": {
+                    "type": "string",
+                    "description": "Instructs Trim Galore to apply the --nextseq=X option, to trim based on quality after removing poly-G tails.",
+                    "help_text": "This enables the option Cutadapt `--nextseq-trim=3'CUTOFF` option via Trim Galore, which will set a quality cutoff (that is normally given with -q instead), but qualities of G bases are ignored. This trimming is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases.",
+                    "fa_icon": "fas fa-cut"
+                },
                 "skip_trimming": {
                     "type": "boolean",
                     "description": "Skip the adapter trimming step.",
