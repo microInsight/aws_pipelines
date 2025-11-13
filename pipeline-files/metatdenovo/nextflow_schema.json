@@ -99,7 +99,7 @@
                     "fa_icon": "fas fa-cut"
                 },
                 "trim_nextseq": {
-                    "type": "string",
+                    "type": "integer",
                     "description": "Instructs Trim Galore to apply the --nextseq=X option, to trim based on quality after removing poly-G tails.",
                     "help_text": "This enables the option Cutadapt `--nextseq-trim=3'CUTOFF` option via Trim Galore, which will set a quality cutoff (that is normally given with -q instead), but qualities of G bases are ignored. This trimming is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases.",
                     "fa_icon": "fas fa-cut"
