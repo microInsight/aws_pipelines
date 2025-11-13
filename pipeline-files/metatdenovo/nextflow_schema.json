@@ -526,6 +526,12 @@
                     "default": "https://raw.githubusercontent.com/nf-core/test-datasets/",
                     "hidden": true
                 },
+                "ecr_registry": {
+                    "type": "string",
+                    "description": "Amazon ECR registry to use for container images",
+                    "fa_icon": "fas fa-cog",
+                    "hidden": true
+                },
                 "trace_report_suffix": {
                     "type": "string",
                     "fa_icon": "far calendar",
