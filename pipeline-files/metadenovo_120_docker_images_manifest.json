@@ -25,6 +25,6 @@
         "quay.io/community.wave.seqera.io/library/prokka_openjdk:10546cadeef11472",
         "quay.io/community.wave.seqera.io/library/spades:4.1.0--77799c52e1d1054a",
         "quay.io/community.wave.seqera.io/library/wget:1.21.4--8b0fcde81c17be5e",
-        "quay.io/quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2"
+        "quay.io/biocontainers/kofamscan:1.3.0--hdfd78af_2"
     ]
 }
