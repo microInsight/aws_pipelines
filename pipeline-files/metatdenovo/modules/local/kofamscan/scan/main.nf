@@ -30,7 +30,7 @@ process KOFAMSCAN_SCAN {
     $gunzip
 
     exec_annotation \\
-        --profile $koprofiles \\
+        --profile s3://healthomics-nfcore-input-125434852769/kofam_db/profiles/ \\
         --ko-list $ko_list \\
         --format detail-tsv \\
         --cpu $task.cpus \\
