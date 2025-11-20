@@ -99,8 +99,8 @@
             "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/genomad:1.5.2--pyhdfd78af_0"
         }, 
         {
-            "sourceImage": "quay.io/biocontainers/fastp:0.23.4--h5f740d0_0", 
-            "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/fastp:0.23.4--h5f740d0_0"
+            "sourceImage": "quay.io/biocontainers/fastp:1.0.1--heae3180_0", 
+            "destinationImage": "125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/fastp:1.0.1--heae3180_0"
         }, 
         {
             "sourceImage": "quay.io/biocontainers/gunc:1.0.5--pyhdfd78af_0", 
