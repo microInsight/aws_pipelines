@@ -1,5 +1,3 @@
-def VERSION='2.7.1' // Version information not provided by tool on CLI
-
 process KRONA_KRONADB {
     label 'process_single'
 
@@ -17,6 +15,7 @@ process KRONA_KRONADB {
 
     script:
     def args = task.ext.args ?: ''
+    def VERSION = '2.7.1'
     """
     ktUpdateTaxonomy.sh \\
         $args \\

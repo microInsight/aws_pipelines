@@ -182,6 +182,11 @@
                         "git_sha": "3f5420aa22e00bd030a2556dfdffc9e164ec0ec5",
                         "installed_by": ["modules"]
                     },
+                    "krona/ktupdatetaxonomy": {
+                        "branch": "master",
+                        "git_sha": "41dfa3f7c0ffabb96a6a813fe321c6d1cc5b6e46",
+                        "installed_by": ["modules"]
+                    },
                     "maxbin2": {
                         "branch": "master",
                         "git_sha": "376c622c91dc6a06af19f4de7f0c103bc0573b3f",
