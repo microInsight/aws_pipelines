@@ -5,7 +5,7 @@ process CHECKM2_PREDICT {
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/0a/0af812c983aeffc99c0fca9ed2c910816b2ddb9a9d0dcad7b87dab0c9c08a16f/data':
-        'community.wave.seqera.io/library/checkm2:1.1.0--60f287bc25d7a10d' }"
+        '125434852769.dkr.ecr.us-east-1.amazonaws.com/community.wave.seqera.io/library/checkm2:1.1.0--60f287bc25d7a10d' }"
 
     input:
     tuple val(meta), path(fasta, stageAs: "input_bins/*")

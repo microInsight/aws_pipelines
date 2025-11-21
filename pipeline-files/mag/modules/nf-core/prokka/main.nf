@@ -5,7 +5,7 @@ process PROKKA {
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/3a/3af46b047c8fe84112adeaecf300878217c629b97f111f923ecf327656ddd141/data' :
-        'community.wave.seqera.io/library/prokka_openjdk:10546cadeef11472' }"
+        '125434852769.dkr.ecr.us-east-1.amazonaws.com/community.wave.seqera.io/library/prokka_openjdk:10546cadeef11472' }"
 
     input:
     tuple val(meta), path(fasta)

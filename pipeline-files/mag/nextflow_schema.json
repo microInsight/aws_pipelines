@@ -481,7 +481,7 @@
                     "format": "path",
                     "exists": true,
                     "description": "Database for taxonomic binning with kraken2.",
-                    "help_text": "Path to a local directory, archive file, or a URL to compressed tar archive that contains at least the three files `hash.k2d`, `opts.k2d` and `taxo.k2d`. E.g. ftp://ftp.ccb.jhu.edu/pub/data/kraken2_dbs/minikraken_8GB_202003.tgz."
+                    "help_text": "Path to a local directory, archive file, or a URL to compressed tar archive that contains at least the three files `hash.k2d`, `opts.k2d` and `taxo.k2d`."
                 },
                 "krona_db": {
                     "type": "string",
