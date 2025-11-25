@@ -99,7 +99,7 @@
                     "fa_icon": "fas fa-cut"
                 },
                 "trim_nextseq": {
-                    "type": "string",
+                    "type": "integer",
                     "description": "Instructs Trim Galore to apply the --nextseq=X option, to trim based on quality after removing poly-G tails.",
                     "help_text": "This enables the option Cutadapt `--nextseq-trim=3'CUTOFF` option via Trim Galore, which will set a quality cutoff (that is normally given with -q instead), but qualities of G bases are ignored. This trimming is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases.",
                     "fa_icon": "fas fa-cut"
@@ -524,6 +524,12 @@
                     "fa_icon": "far fa-check-circle",
                     "description": "Base URL or local path to location of pipeline test dataset files",
                     "default": "https://raw.githubusercontent.com/nf-core/test-datasets/",
+                    "hidden": true
+                },
+                "ecr_registry": {
+                    "type": "string",
+                    "description": "Amazon ECR registry to use for container images",
+                    "fa_icon": "fas fa-cog",
                     "hidden": true
                 },
                 "trace_report_suffix": {

@@ -2,7 +2,7 @@ process FASTP {
     tag "$meta.id"
     label 'process_medium'
 
-    conda "bioconda::fastp=0.23.4"
+    conda "bioconda::fastp=1.0.1"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/fastp:1.0.1--heae3180_0' :
         '125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/fastp:1.0.1--heae3180_0' }"

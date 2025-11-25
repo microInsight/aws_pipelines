@@ -49,7 +49,7 @@ process TRIMGALORE {
         [ ! -f  ${prefix}.fastq.gz ] && ln -s ${reads} ${prefix}.fastq.gz
         trim_galore \\
             ${args_list.join(' ')} \\
-            --nextseq-trim=15 \\
+            --nextseq 15
             --cores ${cores} \\
             --gzip \\
             ${prefix}.fastq.gz
@@ -68,7 +68,7 @@ process TRIMGALORE {
         [ ! -f  ${prefix}_2.fastq.gz ] && ln -s ${reads[1]} ${prefix}_2.fastq.gz
         trim_galore \\
             ${args} \\
-            --nextseq-trim=15 \\
+            --nextseq 15
             --cores ${cores} \\
             --paired \\
             --gzip \\
