@@ -30,8 +30,8 @@ process KOFAMSCAN_SCAN {
     $gunzip
 
     exec_annotation \\
-        --profile "s3://healthomics-nfcore-input-125434852769/kofam_db/profiles/prokaryote.hal" \\
-        --ko-list "s3://healthomics-nfcore-input-125434852769/kofam_db/ko_list" \\
+        --profile ${koprofiles} \\
+        --ko-list ${ko_list} \\
         --format detail-tsv \\
         --cpu $task.cpus \\
         $input \\
