@@ -47,14 +47,9 @@ workflow TAXONOMIC_PROFILING {
                 }
             }
 
-    if (!ch_tax_prof_dbdir.isEmpty()) {
-        centrifuger_db = Channel.fromPath(ch_tax_prof_dbdir)
-        }
-    else {
-        centrifuger_db = Channel.empty()
-        }
+   centrifuger_db = Channel.fromPath(ch_tax_prof_dbdir)
 
-    if (!ch_kraken2_db_file.isEmpty()) {
+    if (ch_kraken2_db_file) {
         KRAKEN2_TAXPROFILING(ch_short_reads, ch_kraken2_db_file, false)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
 
@@ -64,7 +59,7 @@ workflow TAXONOMIC_PROFILING {
         PLOT_KRAKEN2BRACKEN(BRACKEN_KRAKEN2.out.reports, "Kraken2, Bracken", [], params.tax_prof_template)
         ch_versions = ch_versions.mix(PLOT_KRAKEN2BRACKEN.out.versions)
 
-        if (!centrifuger_db.isEmpty()) {
+        if (centrifuger_db) {
             TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, centrifuger_db)
             ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
 
@@ -76,7 +71,7 @@ workflow TAXONOMIC_PROFILING {
         }
     }
 
-    if (!centrifuger_db.isEmpty()) {
+    if (centrifuger_db) {
         CENTRIFUGER_CENTRIFUGER(ch_short_reads, centrifuger_db)
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
 
@@ -85,7 +80,7 @@ workflow TAXONOMIC_PROFILING {
 
         ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
-        if (!ch_db_for_kraken2.isEmpty()) {
+        if (ch_db_for_kraken2) {
             BRACKEN_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, ch_db_for_kraken2)
             ch_versions = ch_versions.mix(BRACKEN_CENTRIFUGER.out.versions)
 
@@ -103,7 +98,7 @@ workflow TAXONOMIC_PROFILING {
             ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
         }
     }
-    if (!ch_db_for_kraken2.isEmpty() && !centrifuger_db.isEmpty()) {
+    if (ch_db_for_kraken2 && centrifuger_db) {
         ch_in_1 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.join(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, by: [0])
         ch_in_3 = ch_in_1.join(BRACKEN_KRAKEN2.out.reports, by: [0])
         ch_in_4 = ch_in_3.join(BRACKEN_CENTRIFUGER.out.reports, by: [0])
@@ -114,8 +109,8 @@ workflow TAXONOMIC_PROFILING {
     }
 
     // Join together for Krona
-    if (!krona_db.isEmpty() && !params.skip_krona) {
-            ch_krona_db = Channel.fromPath(params.krona_db)
+    if (!params.skip_krona) {
+        ch_krona_db = Channel.fromPath(params.krona_db)
 
         ch_tax_classifications = BRACKEN_KRAKEN2.out.txt
             .mix(BRACKEN_CENTRIFUGER.out.txt)

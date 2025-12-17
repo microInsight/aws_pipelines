@@ -512,26 +512,26 @@
                 },
                 "k2_min_target_reads": {
                     "description": "Minimum number of reads assigned to a taxon to be reported in the kraken2 taxonomic profile.",
-                    "type": "string",
+                    "type": "integer",
                     "help_text": "Positive integer values only. Default: 1",
                     "minimum": 0,
                     "maximum": 1
                 },
                 "k2_min_target_fraction": {
                     "description": "Minimum fraction of reads assigned to a taxon to be reported in the kraken2 taxonomic profile.",
-                    "type": "string",
+                    "type": "integer",
                     "help_text": "Values of 0 - 1. Default: 0",
                     "minimum": 0
                 },
                 "cfr_min_target_reads": {
                     "description": "Minimum number of reads assigned to a taxon to be reported in the centrifuge taxonomic profile.",
-                    "type": "string",
+                    "type": "integer",
                     "help_text": "Positive integer values only. Default: 1",
                     "minimum": 0
                 },
                 "cfr_min_target_fraction": {
                     "description": "Minimum fraction of reads assigned to a taxon to be reported in the centrifuge taxonomic profile.",
-                    "type": "string",
+                    "type": "integer",
                     "help_text": "Values of 0 - 1. Default: 0",
                     "minimum": 0,
                     "maximum": 1

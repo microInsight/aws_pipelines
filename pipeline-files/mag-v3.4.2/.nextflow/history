@@ -1,7 +1,0 @@
-2025-12-17 13:52:33	-	kickass_baekeland	-	8bd024498d48a76eb65a0e041ad1a20e	7cc5c6a9-b2c9-4f6a-9326-9317fdf58e97	nextflow run . --outdir test-results -profile docker
-2025-12-17 14:06:40	-	agitated_lichterman	-	8bd024498d48a76eb65a0e041ad1a20e	f340c6c5-e7e4-4524-8216-1e9337a08e70	nextflow run . --outdir test-results -profile docker
-2025-12-17 14:12:17	-	exotic_lorenz	-	8bd024498d48a76eb65a0e041ad1a20e	4d4e0d28-4fdd-4ace-a138-2722462da9a6	nextflow run . --outdir test-results -profile docker --input aws_mag_input_samples.csv
-2025-12-17 14:30:11	-	chaotic_cajal	-	8bd024498d48a76eb65a0e041ad1a20e	f81d938f-f83e-4aa3-87a7-adbb8d94bd6e	nextflow run . --outdir test-results -profile docker --input aws_mag_input_samples.csv
-2025-12-17 14:36:08	-	sleepy_wiles	-	8bd024498d48a76eb65a0e041ad1a20e	f5c7285d-6a82-4f0a-80cc-aebb9b40e386	nextflow run . --outdir test-results -profile docker --input aws_mag_input_samples.csv
-2025-12-17 14:42:06	-	disturbed_plateau	-	8bd024498d48a76eb65a0e041ad1a20e	5b4b0ec6-361b-46f4-8385-75f92aa47274	nextflow run . --outdir test-results -profile docker --input aws_mag_input_samples.csv
-2025-12-17 15:16:20	-	scruffy_mclean	-	8bd024498d48a76eb65a0e041ad1a20e	784f4c66-8193-4468-9cc2-b07dde70c08d	nextflow run . --outdir test-results -profile docker --input aws_mag_input_samples.csv
