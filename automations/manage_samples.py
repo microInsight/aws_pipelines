@@ -11,8 +11,6 @@ from botocore.exceptions import ClientError, NoCredentialsError, ProfileNotFound
 HEADER_BY_WORKFLOW = {
     "mag": ["sample", "fastq_1", "fastq_2"],
     "metatdenovo": ["sample", "fastq_1", "fastq_2"],
-    "ampliseq": ["sampleID", "forwardReads", "reverseReads"],
-    "rnaseq": ["sample", "fastq_1", "fastq_2", "strandedness"],
 }
 
 def infer_job_name(samples_dir: Path) -> str:
@@ -20,43 +18,31 @@ def infer_job_name(samples_dir: Path) -> str:
 
 def find_pairs(samples_dir: Path):
     import re
-    files = [p.name for p in samples_dir.glob("*.fastq.gz") if p.is_file()]
+
     seen = set()
+    files = [p.name for p in samples_dir.glob("*.fastq.gz") if p.is_file()]
     pairs = {}
-    pat_R = re.compile(r"^(?P<sample>.+)_(?P<read>R[12])\.fastq\.gz$")
-    pat_d = re.compile(r"^(?P<sample>.+)_(?P<digit>[12])\.fastq\.gz$")
+    pat_R = re.compile(r"^(?P<sample>.+)_(?P<direction>R1)_([0-9]{3})\.fastq\.gz$")
+    pat_F = re.compile(r"^(?P<sample>.+)_(?P<direction>R2)_([0-9]{3})\.fastq\.gz$")
+
+    match_list = []
     for fname in files:
-        m = pat_R.match(fname)
-        kind = None
-        if m:
-            kind = 'R'
-        else:
-            m = pat_d.match(fname)
-            if not m:
-                continue
-            kind = 'd'
-        sample = m.group("sample")
-        read = m.group("read") if kind == 'R' else f"R{m.group('digit')}"
-        if sample in seen:
-            continue
-        if read == "R1":
-            cands = [f"{sample}_R2.fastq.gz", f"{sample}_2.fastq.gz"]
-            r1, r2 = fname, None
-            for c in cands:
-                if c in files:
-                    r2 = c
-                    break
-        else:
-            cands = [f"{sample}_R1.fastq.gz", f"{sample}_1.fastq.gz"]
-            r2, r1 = fname, None
-            for c in cands:
-                if c in files:
-                    r1 = c
-                    break
-        if r1 and r2:
-            pairs[sample] = (r1, r2)
-            seen.add(sample)
+        matched_r = pat_R.match(fname)
+        matched_f = pat_F.match(fname)
+        for matched in [matched_r, matched_f]:
+            if matched:
+                sample = matched.group("sample")
+                direction = matched.group("direction")
+                if sample not in pairs:
+                    pairs[sample] = {"sample": sample, "fastq_1": None, "fastq_2": None}
+                if direction == "R1":
+                    pairs[sample]["fastq_1"] = fname
+                else:
+                    pairs[sample]["fastq_2"] = fname
+                seen.add(sample)
+        match_list.append(pairs)
     return pairs
+
 
 def generate_samplesheet(samples_dir: Path, workflow: str, pairs: dict, input_bucket: str, job_name: str):
     wf = workflow.lower()
