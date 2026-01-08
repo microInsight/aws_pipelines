@@ -77,7 +77,7 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(BRACKEN_KRAKEN2.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_KRAKEN2.out.reports)
 
-    PLOT_KRAKEN2BRACKEN(BRACKEN_KRAKEN2.out.reports, "Kraken2, Bracken", [], ch_taxpasta_tax_dir)
+    PLOT_KRAKEN2BRACKEN(BRACKEN_KRAKEN2.out.reports, "Kraken2, Bracken", [], file(params.tax_prof_template, checkIfExists: true))
     ch_versions = ch_versions.mix(PLOT_KRAKEN2BRACKEN.out.versions)
 
     ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN2.out.reports)
@@ -103,15 +103,15 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(BRACKEN_CENTRIFUGER.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_CENTRIFUGER.out.reports)
 
-    PLOT_CENTRIFUGERBRACKEN(BRACKEN_CENTRIFUGER.out.reports, "Centrifuger, Bracken", [], ch_taxpasta_tax_dir)
+    PLOT_CENTRIFUGERBRACKEN(BRACKEN_CENTRIFUGER.out.reports, "Centrifuger, Bracken", [], file(params.tax_prof_template, checkIfExists: true))
     ch_versions = ch_versions.mix(PLOT_CENTRIFUGERBRACKEN.out.versions)
     ch_parsedreports = ch_parsedreports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
     TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)
-            ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
+    ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
 
-    PLOT_CENTRIFUGER(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, "Centrifuger, Taxpasta", [], params.TAXONOMIC_PROFILING.template)
-            ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
+    PLOT_CENTRIFUGER(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, "Centrifuger, Taxpasta", [], file(params.tax_prof_template, checkIfExists: true))
+    ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
 
     ch_in_1 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.join(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, by: [0])
     ch_in_3 = ch_in_1.join(BRACKEN_KRAKEN2.out.reports, by: [0])

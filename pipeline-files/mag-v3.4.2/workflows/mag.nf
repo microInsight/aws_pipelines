@@ -214,7 +214,7 @@ workflow MAG {
 
     if(!params.skip_taxonomic_profiling) {
         TAXONOMIC_PROFILING(
-        ch_short_reads
+            ch_short_reads
         )
 
         TAXONOMIC_STANDARDISATION(
@@ -226,7 +226,7 @@ workflow MAG {
 
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
-        }
+    }
 
     /*
     ================================================================================
