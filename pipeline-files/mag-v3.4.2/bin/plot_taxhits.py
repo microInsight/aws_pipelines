@@ -413,10 +413,10 @@ def parse_args():
 	parser.add_argument('--bracken_centrifuger', required=False, type=str, help='Path to Centrifuger bracken output')
 	parser.add_argument('--syl_fn', type=str, required=False, help='Path to gtdb_r214_metadata.tsv.gz file')
 
-	parser.add_argument('--sample_id', required=True, help="Sample ID")
-	parser.add_argument('--run_id', required=True, help="Run ID")
-	parser.add_argument('--barcode', required=True, help="Barcode")
-	parser.add_argument('--sample_type', required=True, help="Sample type")
+	parser.add_argument('--sample_id', required=False, help="Sample ID")
+	parser.add_argument('--run_id', required=False, help="Run ID")
+	parser.add_argument('--barcode', required=False, help="Barcode")
+	parser.add_argument('--sample_type', required=False, help="Sample type")
 
 	parser.add_argument('--logo', required=False, help="Logo")
 	parser.add_argument('--report_template', required=True, help="HTML template")

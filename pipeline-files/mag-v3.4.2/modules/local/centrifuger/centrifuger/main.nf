@@ -13,7 +13,7 @@ process CENTRIFUGER_CENTRIFUGER {
 
     output:
     tuple val(meta), path('*results.tsv')                 , emit: results
-    path "versions.yml"                                  , emit: versions
+    path "versions.yml"                                   , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -21,12 +21,13 @@ process CENTRIFUGER_CENTRIFUGER {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def paired = "-1 ${reads[0]} -2 ${reads[1]}"
     """
     db_name=`find -L ${db} -name "*.1.cfr" -not -name "._*"  | sed 's/\\.1.cfr\$//'`
 
     centrifuger \\
-        -x \$db_name \\
-        -u $reads \\
+        -x `find -L ${db} -name "*.1.cfr" -not -name "._*"  | sed 's/\\.1.cfr\$//'` \\
+        $paired \\
         -t $task.cpus \\
         $args > ${prefix}.results.tsv
 

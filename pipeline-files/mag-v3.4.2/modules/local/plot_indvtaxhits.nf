@@ -31,7 +31,9 @@ process PLOT_INDVTAXHITS {
     def sylph = mode.matches("Sylph") ? "--sylph $taxhits --syl_fn $db" : ""
 
     """
-    plot_taxhits.py \\
+    chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/plot_taxhits.py
+
+    python3 /mnt/workflow/definition/mag-v3.4.2/plot_taxhits.py \\
        $args \\
        $taxp_kraken2 \\
        $taxp_centrifuger \\
@@ -40,9 +42,6 @@ process PLOT_INDVTAXHITS {
        $sylph \\
        --logo $params.logo \\
        --sample_id ${meta.id} \\
-       --run_id ${meta.run_id} \\
-       --barcode ${meta.barcode} \\
-       --sample_type ${meta.target} \\
        --report_template $template \\
        --output $prefix
 

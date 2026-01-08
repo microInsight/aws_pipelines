@@ -28,7 +28,6 @@ include { TAXONOMIC_PROFILING                                   } from '../subwo
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { UNTAR as CENTRIFUGEDB_UNTAR                           } from '../modules/nf-core/untar/main'
 include { MEGAHIT                                               } from '../modules/nf-core/megahit/main'
 include { SPADES as METASPADES                                  } from '../modules/nf-core/spades/main'
 include { SPADES as METASPADESHYBRID                            } from '../modules/nf-core/spades/main'
@@ -91,25 +90,18 @@ workflow MAG {
         ch_host_bowtie2index = Channel.empty()
     }
 
-    if (params.kraken2_db) {
-        ch_kraken2_db_file = file("${params.kraken2_db}", checkIfExists: true)
-    }
-    else {
-        ch_kraken2_db_file = []
-    }
-
-    if (params.tax_prof_dbdir) {
-        ch_tax_prof_dbdir = file("${params.tax_prof_dbdir}", checkIfExists: true)
-    }
-    else {
-        ch_tax_prof_dbdir = []
-    }
-
     if (params.tax_prof_gtdb_metadata) {
-        tax_prof_gtdb_metadata = Channel.value(file("${params.tax_prof_gtdb_metadata}", checkIfExists: true))
+        tax_prof_gtdb_metadata = Channel.fromPath("${params.tax_prof_gtdb_metadata}", checkIfExists: true).first()
     }
     else {
-        tax_prof_gtdb_metadata = []
+        tax_prof_gtdb_metadata = Channel.empty()
+    }
+
+    if (params.taxpasta_taxonomy_dir) {
+        ch_taxpasta_tax_dir = Channel.fromPath("${params.taxpasta_taxonomy_dir}", checkIfExists: true).collect()
+    }
+    else {
+        ch_taxpasta_tax_dir = Channel.empty()
     }
 
     if (params.cat_db) {
@@ -120,7 +112,7 @@ workflow MAG {
     }
 
     if (params.krona_db) {
-        ch_krona_db_file = file("${params.krona_db}", checkIfExists: true)
+        ch_krona_db_file = Channel.fromPath("${params.krona_db}", checkIfExists: true).first()
     }
     else {
         ch_krona_db_file = Channel.empty()
@@ -221,14 +213,12 @@ workflow MAG {
 
     if(!params.skip_taxonomic_profiling) {
         TAXONOMIC_PROFILING(
-        ch_short_reads,
-        ch_kraken2_db_file,
-        ch_krona_db_file,
-        ch_tax_prof_dbdir
+        ch_short_reads
         )
 
         ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
         }
+
     /*
     ================================================================================
                                     Assembly

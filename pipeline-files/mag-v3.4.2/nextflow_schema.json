@@ -543,8 +543,8 @@
                     "format": "path",
                     "exists": true
                 },
-                "tax_prof_dbdir": {
-                    "description": "Directory containing databases for Centrifuger taxonomic profiling.",
+                "centrifuger_db": {
+                    "description": "Either .tar.gz file or directory containing databases for Centrifuger taxonomic profiling.",
                     "type": "string",
                     "help_text": "Path to Centrifuger database directory containing files ending with '.1.cfr', '.2.cfr', '.3.cfr', and '.4.cfr'",
                     "format": "path",

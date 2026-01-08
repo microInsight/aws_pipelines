@@ -90,12 +90,12 @@
             margin: 20px 0;
             width: 60%;
         }
-        .tr-spacer { height: 10px; } 
+        .tr-spacer { height: 10px; }
         .disclaimer {
            font-weight: bold;
            font-size: 24px;
            text-align: center;
-           margin-top: 20px;
+           margin-top: 20px; }
     </style>
 
 </head>
@@ -143,7 +143,7 @@
       <summary class="section-subtitle">Kraken2 Assignment rates per taxonomic rank</summary>
       <div class="plotly-plot>
        {{ taxp_fig_A_Kraken2 | safe }}
-       <figcaption class="figure-legend"> <b>Figure {{ kraken2_legend_count }}a:</b> Number of reads assigned by Kraken2 at each taxonomic rank, reported at the most specific rank it was possible to assign.</figcaption>        
+       <figcaption class="figure-legend"> <b>Figure {{ kraken2_legend_count }}a:</b> Number of reads assigned by Kraken2 at each taxonomic rank, reported at the most specific rank it was possible to assign.</figcaption>
       {% endif %}
       </details>
 

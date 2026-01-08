@@ -6,11 +6,11 @@ process KRAKEN2_DB_PREPARATION {
         'nf-core/ubuntu:20.04' }"
 
     input:
-    path db
+    path(db)
 
     output:
-    tuple val("${db.simpleName}"), path("database/*.k2d"), emit: db
-    path "versions.yml"                                  , emit: versions
+    tuple val("${db.simpleName}"), path("database/*.k2d")  , emit: db
+    path "versions.yml"                                    , emit: versions
 
     script:
     """

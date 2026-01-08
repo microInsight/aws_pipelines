@@ -4,8 +4,8 @@ process PLOT_TAXHITS {
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        '125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainerslma_img:latest' :
-        '125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainerslma_img:latest' }"
+        '125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/lma_img:latest' :
+        '125434852769.dkr.ecr.us-east-1.amazonaws.com/quay/biocontainers/lma_img:latest' }"
 
     input:
     tuple val(meta), path(taxpasta_kraken), path(taxpasta_centrifuger), path(kraken2_bracken), path(centrifuger_bracken)

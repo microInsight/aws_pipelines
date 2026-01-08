@@ -9,7 +9,7 @@ process BRACKEN_BRACKEN {
 
     input:
     tuple val(meta), path(kraken_report)
-    path database
+    path(database)
 
     output:
     tuple val(meta), path(bracken_report)        , emit: reports

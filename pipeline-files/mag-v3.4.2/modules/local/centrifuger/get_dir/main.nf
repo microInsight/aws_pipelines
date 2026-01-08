@@ -1,4 +1,4 @@
-process UNTAR {
+process CENTRIFUGER_GET_DIR {
     tag "$archive"
     label 'process_single'
 
@@ -11,7 +11,7 @@ process UNTAR {
     tuple val(meta), path(archive)
 
     output:
-    tuple val(meta), path("$prefix"), emit: untar
+    path("$prefix")                 , emit: untar
     path "versions.yml"             , emit: versions
 
     when:
@@ -23,20 +23,20 @@ process UNTAR {
     prefix    = task.ext.prefix ?: ( meta.id ? "${meta.id}" : archive.baseName.toString().replaceFirst(/\.tar$/, ""))
 
     """
-    mkdir ${prefix}
+    mkdir $prefix
 
     ## Ensures --strip-components only applied when top level of tar contents is a directory
     ## If just files or multiple directories, place all in prefix
     if [[ \$(tar -taf ${archive} | grep -o -P "^.*?\\/" | uniq | wc -l) -eq 1 ]]; then
         tar \\
-            -C ${prefix} --strip-components 1 \\
+            -C $prefix --strip-components 1 \\
             -xavf \\
             $args \\
             $archive \\
             $args2
     else
         tar \\
-            -C ${prefix} \\
+            -C $prefix \\
             -xavf \\
             $args \\
             $archive \\
@@ -52,7 +52,7 @@ process UNTAR {
     stub:
     prefix    = task.ext.prefix ?: ( meta.id ? "${meta.id}" : archive.toString().replaceFirst(/\.[^\.]+(.gz)?$/, ""))
     """
-    mkdir ${prefix}
+    mkdir $prefix
     touch ${prefix}/file.txt
 
     cat <<-END_VERSIONS > versions.yml

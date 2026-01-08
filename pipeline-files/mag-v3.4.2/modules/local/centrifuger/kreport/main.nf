@@ -12,7 +12,7 @@ process CENTRIFUGER_KREPORT {
     path(db)
 
     output:
-    tuple val(meta), path('*.kreport.tsv')                 , emit: kreport
+    tuple val(meta), path('*.kreport.tsv')               , emit: kreport
     path "versions.yml"                                  , emit: versions
 
     when:
