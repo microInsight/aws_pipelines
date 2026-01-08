@@ -24,6 +24,7 @@ include { DEPTHS                                                } from '../subwo
 include { LONGREAD_PREPROCESSING                                } from '../subworkflows/local/longread_preprocessing'
 include { SHORTREAD_PREPROCESSING                               } from '../subworkflows/local/shortread_preprocessing'
 include { TAXONOMIC_PROFILING                                   } from '../subworkflows/local/taxonomic_profiling'
+include { TAXONOMIC_STANDARDISATION                             } from '../subworkflows/local/taxonomic_standardisation'
 
 //
 // MODULE: Installed directly from nf-core/modules
@@ -216,7 +217,15 @@ workflow MAG {
         ch_short_reads
         )
 
+        TAXONOMIC_STANDARDISATION(
+            TAXONOMIC_PROFILING.out.profiles
+        )
+
         ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
+        ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
+
+        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
         }
 
     /*
