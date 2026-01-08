@@ -14,6 +14,8 @@ process KRAKEN2 {
     output:
     tuple val("kraken2"), val(meta), path("results.krona"), emit: results_for_krona
     tuple val(meta), path("*kraken2_report.txt")          , emit: report
+    tuple val(meta), path('*.classified{.,_}*')           , optional:true, emit: classified_reads_fastq
+    tuple val(meta), path('*.unclassified{.,_}*')         , optional:true, emit: unclassified_reads_fastq
     path "versions.yml"                                   , emit: versions
 
     when:
@@ -29,10 +31,9 @@ process KRAKEN2 {
     k2 classify \
         --report-zero-counts \
         --threads ${task.cpus} \
-        --db &{db} \
+        --db ${db} \
         --report ${prefix}.kraken2_report.txt \
         --use-names \
-        --confidence 0.6 \
         --classified-out ${prefix}#_classified_reads.fq \
         --unclassified-out ${prefix}#_unclassified_reads.fq \
         $args \

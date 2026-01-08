@@ -543,6 +543,48 @@
                     "format": "path",
                     "exists": true
                 },
+                    "taxpasta_taxonomy_dir": {
+                    "type": "string",
+                    "description": "The path to a directory containing taxdump files.",
+                    "help_text": "This arguments provides the path to the directory containing taxdump files. At least nodes.dmp and names.dmp are required. A merged.dmp file is optional. \n\nModifies tool parameter(s):\n-taxpasta: `--taxpasta_taxonomy_dir`",
+                    "fa_icon": "fas fa-tree"
+                },
+                "taxpasta_add_name": {
+                    "type": "boolean",
+                    "description": "Add the taxon name to the output. Requires --taxpasta_taxonomy_dir.",
+                    "help_text": "The standard output format of taxpasta is a two-column table including the read counts and the integer taxonomic ID. The taxon name can be added as additional information to the output table in addition to the taxon ID. Requires --taxpasta_taxonomy_dir to be supplied to infer the additional information.\n\nModifies tool parameter(s):\n- taxpasta: `--add-name`",
+                    "fa_icon": "fas fa-tag"
+                },
+                "taxpasta_add_rank": {
+                    "type": "boolean",
+                    "description": "Add the taxon rank to the output. Requires --taxpasta_taxonomy_dir.",
+                    "help_text": "The standard output format of taxpasta is a two-column table including the read counts and the integer taxonomic ID. The taxon rank of the given taxonomic entry can be added as additional information to the output table. Requires --taxpasta_taxonomy_dir to be supplied to infer the additional information.\n\nModifies tool parameter(s):\n- taxpasta: `--add-rank`",
+                    "fa_icon": "fas fa-sort-amount-down-alt"
+                },
+                "taxpasta_add_lineage": {
+                    "type": "boolean",
+                    "description": "Add the taxon's entire name lineage to the output. Requires --taxpasta_taxonomy_dir.",
+                    "help_text": "\nThe standard output format of taxpasta is a two-column table including the read counts and the integer taxonomic ID. The taxon's entire taxonomic lineage with the taxon names separated by semi-colons can be added as additional information to the output table. Requires --taxpasta_taxonomy_dir to be supplied to infer the additional information.\n\nModifies tool parameter(s):\n- taxpasta: `--add-lineage`\n",
+                    "fa_icon": "fas fa-link"
+                },
+                "taxpasta_add_idlineage": {
+                    "type": "boolean",
+                    "description": "Add the taxon's entire ID lineage to the output. Requires --taxpasta_taxonomy_dir.",
+                    "help_text": "\nThe standard output format of taxpasta is a two-column table including the read counts and the integer taxonomic ID. The taxon's entire taxonomic lineage with the taxon identifiers separated by semi-colons can be added as additional information to the output table. Requires --taxpasta_taxonomy_dir to be supplied to infer the additional information.\n\nModifies tool parameter(s):\n- taxpasta: `--add-id-lineage`\n",
+                    "fa_icon": "fas fa-link"
+                },
+                "taxpasta_add_ranklineage": {
+                    "type": "boolean",
+                    "description": "Add the taxon's entire rank lineage to the output. Requires --taxpasta_taxonomy_dir.",
+                    "help_text": "\nThe standard output format of taxpasta is a two-column table including the read counts and the integer taxonomic ID. The taxonomic ranks categories of the taxon's entire lineage separated by semi-colons can be added as additional information to the output table. This complements `--taxpasta_add_lineage` by telling you which taxonomic rank level each entry in the lineage refers to. Requires --taxpasta_taxonomy_dir to be supplied to infer the additional information.",
+                    "fa_icon": "fas fa-link"
+                },
+                "taxpasta_ignore_errors": {
+                    "type": "boolean",
+                    "description": "Ignore individual profiles that cause errors.",
+                    "help_text": "\nIgnore any metagenomic profiles with errors when running `taxpasta merge`. At least two profiles without errors are needed to merge.\n\nModifies tool parameter(s):\n- taxpasta: `--ignore-errors`\n",
+                    "fa_icon": "fas fa-link"
+                },
                 "centrifuger_db": {
                     "description": "Either .tar.gz file or directory containing databases for Centrifuger taxonomic profiling.",
                     "type": "string",
