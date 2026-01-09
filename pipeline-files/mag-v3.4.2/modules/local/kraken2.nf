@@ -31,6 +31,7 @@ process KRAKEN2 {
     k2 classify \
         --report-zero-counts \
         --threads ${task.cpus} \
+        --memory-mapping \
         --db ${db} \
         --report ${prefix}.kraken2_report.txt \
         --use-names \
