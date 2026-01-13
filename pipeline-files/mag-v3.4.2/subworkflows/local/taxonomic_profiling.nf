@@ -37,7 +37,7 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = Channel.empty()
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
-    ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true).collect() : []
+    ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? Channel.fromPath(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
     // untar Kraken2 databases from .tar.gz file input and pull out the k2_database folder
     ch_kraken2_db = file(params.kraken2_db, checkifExists: true)
@@ -77,12 +77,18 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(BRACKEN_KRAKEN2.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_KRAKEN2.out.reports)
 
-    PLOT_KRAKEN2BRACKEN(BRACKEN_KRAKEN2.out.reports, "Kraken2, Bracken", [], file(params.tax_prof_template, checkIfExists: true))
+    PLOT_KRAKEN2BRACKEN(
+        BRACKEN_KRAKEN2.out.reports,
+        "Kraken2, Bracken",
+        Channel.value("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz"),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
     ch_versions = ch_versions.mix(PLOT_KRAKEN2BRACKEN.out.versions)
 
     ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN2.out.reports)
 
-    TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, 'kraken2', 'tsv', ch_taxpasta_tax_dir.first().parent)
+    TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, 'kraken2', 'tsv', ch_taxpasta_tax_dir)
             ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
 
     // Centrifuger taxonomic profiling
@@ -103,21 +109,38 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(BRACKEN_CENTRIFUGER.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_CENTRIFUGER.out.reports)
 
-    PLOT_CENTRIFUGERBRACKEN(BRACKEN_CENTRIFUGER.out.reports, "Centrifuger, Bracken", [], file(params.tax_prof_template, checkIfExists: true))
+    PLOT_CENTRIFUGERBRACKEN(
+        BRACKEN_CENTRIFUGER.out.reports,
+        "Centrifuger, Bracken",
+        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
     ch_versions = ch_versions.mix(PLOT_CENTRIFUGERBRACKEN.out.versions)
     ch_parsedreports = ch_parsedreports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
-    TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir.first().parent)
+    TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)
     ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
 
-    PLOT_CENTRIFUGER(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, "Centrifuger, Taxpasta", [], file(params.tax_prof_template, checkIfExists: true))
+    PLOT_CENTRIFUGER(
+        TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile,
+        "Centrifuger, Taxpasta",
+        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
     ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
 
     ch_in_1 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.join(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile, by: [0])
     ch_in_3 = ch_in_1.join(BRACKEN_KRAKEN2.out.reports, by: [0])
     ch_in_4 = ch_in_3.join(BRACKEN_CENTRIFUGER.out.reports, by: [0])
 
-    PLOT_TAXHITS(ch_in_4, params.tax_prof_gtdb_metadata, file(params.tax_prof_template, checkIfExists: true))
+    PLOT_TAXHITS(
+        ch_in_4,
+        file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
     ch_versions = ch_versions.mix(PLOT_TAXHITS.out.versions)
 
 

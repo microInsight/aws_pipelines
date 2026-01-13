@@ -543,7 +543,7 @@
                     "format": "path",
                     "exists": true
                 },
-                    "taxpasta_taxonomy_dir": {
+                "taxpasta_taxonomy_dir": {
                     "type": "string",
                     "description": "The path to a directory containing taxdump files.",
                     "help_text": "This arguments provides the path to the directory containing taxdump files. At least nodes.dmp and names.dmp are required. A merged.dmp file is optional. \n\nModifies tool parameter(s):\n-taxpasta: `--taxpasta_taxonomy_dir`",
@@ -736,9 +736,77 @@
             "description": "",
             "default": "",
             "properties": {
-                "skip_prodigal": {
+                "annotation_tool": {
+                    "type": "string",
+                    "default": "pyrodigal",
+                    "description": "Specify which annotation tool to use for some downstream tools.",
+                    "enum": [
+                        "prodigal",
+                        "pyrodigal",
+                        "prokka"
+                    ],
+                    "fa_icon": "fas fa-edit"
+                },
+                "save_annotations": {
                     "type": "boolean",
-                    "description": "Skip Prodigal gene prediction"
+                    "description": "Specify whether to save gene annotations in the results directory.",
+                    "fa_icon": "fas fa-save"
+                },
+                "annotation_prodigal_singlemode": {
+                    "type": "boolean",
+                    "description": "Specify whether to use Prodigal's single-genome mode for long sequences.",
+                    "help_text": "By default Prodigal runs in 'single genome' mode that requires sequence lengths to be equal or longer than 20000 characters.\n\nHowever, more fragmented reads from MAGs often result in contigs shorter than this. Therefore, nf-core/funcscan will run with the `meta` mode by default. Providing this parameter allows to override this and run in single genome mode again.\n\nFor more information check the Prodigal [documentation](https://github.com/hyattpd/prodigal/wiki).\n\n> Modifies tool parameter(s): \n> -PRODIGAL: `-p`",
+                    "fa_icon": "far fa-circle"
+                },
+                "annotation_prodigal_closed": {
+                    "type": "boolean",
+                    "description": "Does not allow partial genes on contig edges.",
+                    "help_text": "Suppresses partial genes from being on contig edge, resulting in closed ends. Should only be activated for genomes where it is sure the first and last bases of the sequence(s) do not fall inside a gene. Run together with `-p normal` (former `-p single`) .\n\nFor more information check the Prodigal [documentation](https://github.com/hyattpd/prodigal/wiki).\n\n> Modifies tool parameter(s):\n> - PRODIGAL: `-c`",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "annotation_prodigal_transtable": {
+                    "type": "integer",
+                    "default": 11,
+                    "description": "Specifies the translation table used for gene annotation.",
+                    "help_text": "Specifies which translation table should be used for seqeunce annotation. All possible genetic code translation tables can be found [here](https://en.wikipedia.org/wiki/List_of_genetic_codes). The default is set at 11, which is used for standard Bacteria/Archeae.\n\nFor more information check the Prodigal [documentation](https://github.com/hyattpd/prodigal/wiki).\n\n> Modifies tool parameter(s):\n> - PRODIGAL: `-g`",
+                    "fa_icon": "fas fa-border-all"
+                },
+                "annotation_prodigal_forcenonsd": {
+                    "type": "boolean",
+                    "description": "Forces Prodigal to scan for motifs.",
+                    "help_text": "Forces PRODIGAL to a full scan for motifs rather than activating the Shine-Dalgarno RBS finder, the default scanner for PRODIGAL to train for motifs.\n\nFor more information check the Prodigal [documentation](https://github.com/hyattpd/prodigal/wiki).\n\n> Modifies tool parameter(s):\n> - PRODIGAL: `-n`",
+                    "fa_icon": "fas fa-barcode"
+                },
+                "annotation_pyrodigal_singlemode": {
+                    "type": "boolean",
+                    "fa_icon": "far fa-circle",
+                    "description": "Specify whether to use Pyrodigal's single-genome mode for long sequences.",
+                    "help_text": "By default Pyrodigal runs in 'single genome' mode that requires sequence lengths to be equal or longer than 20000 characters.\n\nHowever, more fragmented reads from MAGs often result in contigs shorter than this. Therefore, we will run with the `meta` mode by default, but providing this parameter allows to override this and run in single genome mode again.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s): \n> - PYRODIGAL: `-p`"
+                },
+                "annotation_pyrodigal_closed": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-arrows-alt-h",
+                    "description": "Does not allow partial genes on contig edges.",
+                    "help_text": "Suppresses partial genes from being on contig edge, resulting in closed ends. Should only be activated for genomes where it is sure the first and last bases of the sequence(s) do not fall inside a gene. Run together with `-p single` .\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-c`"
+                },
+                "annotation_pyrodigal_transtable": {
+                    "type": "integer",
+                    "default": 11,
+                    "fa_icon": "fas fa-border-all",
+                    "description": "Specifies the translation table used for gene annotation.",
+                    "help_text": "Specifies which translation table should be used for seqeunce annotation. All possible genetic code translation tables can be found [here](https://en.wikipedia.org/wiki/List_of_genetic_codes). The default is set at 11, which is used for standard Bacteria/Archeae.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-g`"
+                },
+                "annotation_pyrodigal_forcenonsd": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-barcode",
+                    "description": "Forces Pyrodigal to scan for motifs.",
+                    "help_text": "Forces Pyrodigal to a full scan for motifs rather than activating the Shine-Dalgarno RBS finder, the default scanner for Pyrodigal to train for motifs.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-n`"
+                },
+                "annotation_pyrodigal_usespecialstopchar": {
+                    "type": "boolean",
+                    "fa_icon": "fa fa-star-of-life",
+                    "description": "This forces Pyrodigal to append asterisks (`*`) as stop codon indicators. Do not use when running AMP workflow.",
+                    "help_text": "Some downstream tools like AMPlify cannot process sequences containing non-sequence characters like the stop codon indicator `*`. Thus, this flag is deactivated by default. Activate this flag to revert the behaviour and have Pyrodigal append `*` as stop codon indicator to annotated sequences.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `--no-stop-codon`"
                 },
                 "prokka_with_compliance": {
                     "type": "boolean",
@@ -863,6 +931,10 @@
                     "type": "boolean",
                     "description": "Skip CONCOCT Binning"
                 },
+                "skip_comebin": {
+                    "type": "boolean",
+                    "description": "Skip COMEBin Binning"
+                },
                 "min_contig_size": {
                     "type": "integer",
                     "default": 1500,
@@ -880,6 +952,18 @@
                     "default": 100,
                     "description": "Maximal number of contigs that are not part of any bin but treated as individual genome.",
                     "help_text": "Contigs that do not fulfill the thresholds of `--min_length_unbinned_contigs` and `--max_unbinned_contigs` are pooled for downstream analysis and reporting, except contigs that also do not fullfill `--min_contig_size` are not considered further."
+                },
+                "bin_min_size": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": 0,
+                    "description": "Specify the shortest length a bin should be to retain for downstream processing (in base pairs)",
+                    "help_text": "This can speed up downstream processing by removing 'nonsense' bins (e.g. badly binned single short-contig bins, or unnaturally large bins). By default there is no lower limit the size of bins allowed to pass."
+                },
+                "bin_max_size": {
+                    "type": "integer",
+                    "description": "Specify the longest length a bin should be to retain for downstream processing (in base pairs). By default no limit.",
+                    "help_text": "This can speed up downstream processing by removing 'nonsense' bins (e.g. badly binned single short-contig bins, or unnaturally large bins). By default there is no upper limit on size of bins allowed to pass."
                 },
                 "bin_concoct_chunksize": {
                     "type": "integer",
@@ -926,6 +1010,16 @@
                     "type": "boolean",
                     "description": "Exclude unbinned contigs in the post-binning steps (bin QC, taxonomic classification, and annotation steps).",
                     "help": "If you're not interested in assemby results that are not considered 'genome level', excluding unbinned contigs can greatly speed up downstream steps such as Prokka, that can be quite slow and spin up many tasks."
+                },
+                "longread_percentidentity": {
+                    "type": "number",
+                    "description": "Specify a minimum percent identity filter for long reads mapping back to assembled contigs.",
+                    "help_text": "If specified, this parameter sets the `--percentIdentity` flag of the `metabat2 jgisummarizebamcontigdepths` command that is used to generate a read-depth per contig depth post assembly mapping. It can be useful in some cases to get more accurate depth coverages for binning by removing spurious alignments that can inflate coverage."
+                },
+                "shortread_percentidentity": {
+                    "type": "number",
+                    "description": "Specify a minimum percent identity filter for short reads mapping back to assembled contigs.",
+                    "help_text": "If specified, this parameter sets the `--percentIdentity` flag of the `metabat2 jgisummarizebamcontigdepths` command that is used to generate a read-depth per contig depth post assembly mapping. It can be useful in some cases to get more accurate depth coverages for binning by removing spurious alignments that can inflate coverage."
                 }
             }
         },

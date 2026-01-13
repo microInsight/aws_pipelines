@@ -12,6 +12,7 @@ process ADJUST_MAXBIN2_EXT {
 
     output:
     tuple val(meta), path("*.fa.gz"), emit: renamed_bins
+    path "versions.yml", emit: versions
 
     script:
     """

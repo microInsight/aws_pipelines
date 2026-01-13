@@ -11,6 +11,7 @@ process PLOT_INDVTAXHITS {
     tuple val(meta), path(taxhits)
     val(mode)
     val(db)
+    path(logo)
     path(template)
 
     output:
@@ -32,16 +33,17 @@ process PLOT_INDVTAXHITS {
 
     """
     chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/plot_taxhits.py
+    chmod +rwx /mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz
 
-    python3 /mnt/workflow/definition/mag-v3.4.2/plot_taxhits.py \\
+    python3 /mnt/workflow/definition/mag-v3.4.2/bin/plot_taxhits.py \\
        $args \\
        $taxp_kraken2 \\
        $taxp_centrifuger \\
        $bracken_kraken2 \\
        $bracken_centrifuger \\
        $sylph \\
-       --logo $params.logo \\
        --sample_id ${meta.id} \\
+       --logo $logo \\
        --report_template $template \\
        --output $prefix
 

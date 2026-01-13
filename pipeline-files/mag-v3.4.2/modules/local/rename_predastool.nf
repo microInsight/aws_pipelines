@@ -12,6 +12,7 @@ process RENAME_PREDASTOOL {
 
     output:
     tuple val(meta), path("${meta.assembler}-${meta.binner}Refined-${meta.id}*"), emit: renamed_bins
+    path "versions.yml", emit: versions
 
     script:
     """

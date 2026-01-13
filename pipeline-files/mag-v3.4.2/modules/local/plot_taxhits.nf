@@ -10,6 +10,7 @@ process PLOT_TAXHITS {
     input:
     tuple val(meta), path(taxpasta_kraken), path(taxpasta_centrifuger), path(kraken2_bracken), path(centrifuger_bracken)
     path(syl_fn)
+    path(logo)
     path(template)
 
     output:
@@ -22,8 +23,10 @@ process PLOT_TAXHITS {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+
     """
     chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/plot_taxhits.py
+    chmod +rwx /mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz
 
     python3 /mnt/workflow/definition/mag-v3.4.2/bin/plot_taxhits.py \\
        --taxpasta_kraken2 $taxpasta_kraken \\
@@ -31,11 +34,8 @@ process PLOT_TAXHITS {
        --bracken_kraken2 $kraken2_bracken \\
        --bracken_centrifuger $centrifuger_bracken \\
        --syl_fn $syl_fn \\
-       --logo $params.logo \\
        --sample_id ${meta.id} \\
-       --run_id ${meta.run_id} \\
-       --barcode ${meta.barcode} \\
-       --sample_type ${meta.target} \\
+       --logo $logo \\
        --report_template $template \\
        --output $prefix
 

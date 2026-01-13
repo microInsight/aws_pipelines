@@ -1,6 +1,6 @@
 process CENTRIFUGER_GET_DIR {
     tag "$archive"
-    label 'process_single'
+    label 'process_low'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

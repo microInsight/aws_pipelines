@@ -54,7 +54,7 @@ workflow TAXONOMIC_STANDARDISATION {
         }
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
-    ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? Channel.fromPath(params.taxpasta_taxonomy_dir, checkIfExists: true).collect() : []
+    ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
     // We replace kraken2-bracken to kraken2 replace to get the right output-format description (as it's Kraken style)
     // Bracken to id append so to disambiguate when we have same databases for kraken2 step of bracken, with normal bracken
@@ -117,8 +117,9 @@ workflow TAXONOMIC_STANDARDISATION {
     PLOT_CENTRIFUGER(
         TAXPASTA_STANDARDISE.out.standardised_profile,
         "Centrifuger, Taxpasta",
-        [],
-        ch_taxpasta_tax_dir
+        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
     )
     ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
 
@@ -139,8 +140,9 @@ workflow TAXONOMIC_STANDARDISATION {
     PLOT_KRAKEN2(
         TAXPASTA_STANDARDISE.out.standardised_profile,
         "Kraken2, Taxpasta",
-        [],
-        ch_taxpasta_tax_dir
+        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
     )
     ch_versions = ch_versions.mix(PLOT_KRAKEN2.out.versions)
 

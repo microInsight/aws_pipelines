@@ -10,9 +10,11 @@ include { softwareVersionsToYAML                                } from '../subwo
 include { methodsDescriptionText                                } from '../subworkflows/local/utils_nfcore_mag_pipeline'
 
 //
-// SUBWORKFLOW: Consisting of a mix of local and nf-core/modules
+// SUBWORKFLOW: Consisting of a mix of local and nf-core subworkflows
 //
 include { BINNING_PREPARATION                                   } from '../subworkflows/local/binning_preparation'
+include { SHORTREAD_BINNING_PREPARATION                         } from '../subworkflows/local/binning_preparation_shortread'
+include { LONGREAD_BINNING_PREPARATION                          } from '../subworkflows/local/binning_preparation_longread'
 include { BINNING                                               } from '../subworkflows/local/binning'
 include { BIN_QC                                                } from '../subworkflows/local/bin_qc'
 include { BINNING_REFINEMENT                                    } from '../subworkflows/local/binning_refinement'
@@ -34,7 +36,11 @@ include { SPADES as METASPADES                                  } from '../modul
 include { SPADES as METASPADESHYBRID                            } from '../modules/nf-core/spades/main'
 include { GUNZIP as GUNZIP_ASSEMBLIES                           } from '../modules/nf-core/gunzip'
 include { GUNZIP as GUNZIP_ASSEMBLYINPUT                        } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_FAA                        } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_FNA                        } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_GBK                        } from '../modules/nf-core/gunzip'
 include { PRODIGAL                                              } from '../modules/nf-core/prodigal/main'
+include { PYRODIGAL                                             } from '../modules/nf-core/pyrodigal/main'
 include { PROKKA                                                } from '../modules/nf-core/prokka/main'
 include { MMSEQS_DATABASES                                      } from '../modules/nf-core/mmseqs/databases/main'
 include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
@@ -179,7 +185,9 @@ workflow MAG {
         )
 
         ch_versions = ch_versions.mix(SHORTREAD_PREPROCESSING.out.versions)
-        ch_multiqc_files = ch_multiqc_files.mix(SHORTREAD_PREPROCESSING.out.multiqc_files.collect { it[1] }.ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(
+            SHORTREAD_PREPROCESSING.out.multiqc_files.collect { it[1] }.ifEmpty([])
+            )
         ch_short_reads = SHORTREAD_PREPROCESSING.out.short_reads
         ch_short_reads_assembly = SHORTREAD_PREPROCESSING.out.short_reads_assembly
     }
@@ -313,6 +321,7 @@ workflow MAG {
         // Assembly
 
         ch_assembled_contigs = Channel.empty()
+        ch_assemblies = Channel.empty()
 
         if (!params.single_end && !params.skip_spades) {
             METASPADES(ch_short_reads_spades.map { meta, reads -> [meta, reads, [], []] }, [], [])
@@ -351,12 +360,12 @@ workflow MAG {
             ch_versions = ch_versions.mix(MEGAHIT.out.versions.first())
         }
 
-
-
         GUNZIP_ASSEMBLIES(ch_assembled_contigs)
         ch_versions = ch_versions.mix(GUNZIP_ASSEMBLIES.out.versions)
 
         ch_assemblies = GUNZIP_ASSEMBLIES.out.gunzip
+        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT'] }
+        ch_longread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['FLYE', 'METAMDBG'] }
     }
     else {
         ch_assemblies_split = ch_input_assemblies.branch { _meta, assembly ->
@@ -367,8 +376,9 @@ workflow MAG {
         GUNZIP_ASSEMBLYINPUT(ch_assemblies_split.gzipped)
         ch_versions = ch_versions.mix(GUNZIP_ASSEMBLYINPUT.out.versions)
 
-        ch_assemblies = Channel.empty()
         ch_assemblies = ch_assemblies.mix(ch_assemblies_split.ungzip, GUNZIP_ASSEMBLYINPUT.out.gunzip)
+        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT'] }
+        ch_longread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['FLYE', 'METAMDBG'] }
     }
 
     if (!params.skip_quast) {
@@ -382,13 +392,29 @@ workflow MAG {
     ================================================================================
     */
 
-    if (!params.skip_prodigal) {
+    if (params.annotation_tool == 'pyrodigal') {
+        PYRODIGAL(
+            ch_assemblies,
+            "gff"
+        )
+
+        GUNZIP_PYRODIGAL_FAA(PYRODIGAL.out.faa)
+        GUNZIP_PYRODIGAL_FNA(PYRODIGAL.out.fna)
+        GUNZIP_PYRODIGAL_GBK(PYRODIGAL.out.annotations)
+
+        ch_versions = ch_versions.mix(PYRODIGAL.out.versions)
+        ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_FAA.out.versions)
+        ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_FNA.out.versions)
+        ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_GBK.out.versions)
+    } else {
         PRODIGAL(
             ch_assemblies,
             'gff',
         )
         ch_versions = ch_versions.mix(PRODIGAL.out.versions.first())
     }
+
+
 
     /*
     ================================================================================
@@ -411,10 +437,12 @@ workflow MAG {
 
     if (!params.skip_binning || params.ancient_dna) {
         BINNING_PREPARATION(
-            ch_assemblies,
+            ch_shortread_assemblies,
             ch_short_reads,
+            ch_longread_assemblies,
+            ch_long_reads
         )
-        ch_versions = ch_versions.mix(BINNING_PREPARATION.out.bowtie2_version.first())
+        ch_versions = ch_versions.mix(BINNING_PREPARATION.out.versions)
     }
 
     /*
@@ -436,15 +464,22 @@ workflow MAG {
 
     if (!params.skip_binning) {
 
-        // Make sure if running aDNA subworkflow to use the damage-corrected contigs for higher accuracy
         if (params.ancient_dna && !params.skip_ancient_damagecorrection) {
             BINNING(
-                BINNING_PREPARATION.out.grouped_mappings.join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled).map { it -> [it[0], it[4], it[2], it[3]] }
+                BINNING_PREPARATION.out.grouped_mappings
+                .join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled)
+                .map { meta, _contigs, bams, bais, corrected_contigs ->
+                    [meta, corrected_contigs, bams, bais]
+                },
+                params.bin_min_size,
+                params.bin_max_size,
             )
         }
         else {
             BINNING(
-                BINNING_PREPARATION.out.grouped_mappings
+                BINNING_PREPARATION.out.grouped_mappings,
+                params.bin_min_size,
+                params.bin_max_size,
             )
         }
         ch_versions = ch_versions.mix(BINNING.out.versions)
@@ -510,35 +545,46 @@ workflow MAG {
 
             if (params.postbinning_input == 'raw_bins_only') {
                 ch_input_for_postbinning_bins = ch_binning_results_bins
-                ch_input_for_postbinning_bins_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
+                ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
             }
             else if (params.postbinning_input == 'refined_bins_only') {
                 ch_input_for_postbinning_bins = ch_refined_bins
-                ch_input_for_postbinning_bins_unbins = ch_refined_bins.mix(ch_refined_unbins)
+                ch_input_for_postbinning_unbins = ch_refined_bins.mix(ch_refined_unbins)
             }
             else if (params.postbinning_input == 'both') {
                 ch_all_bins = ch_binning_results_bins.mix(ch_refined_bins)
                 ch_input_for_postbinning_bins = ch_all_bins
-                ch_input_for_postbinning_bins_unbins = ch_all_bins.mix(ch_binning_results_unbins).mix(ch_refined_unbins)
+                ch_input_for_postbinning_unbins = ch_all_bins.mix(ch_binning_results_unbins).mix(ch_refined_unbins)
             }
         }
         else {
             ch_input_for_postbinning_bins = ch_binning_results_bins
-            ch_input_for_postbinning_bins_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
+            ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
         }
 
         ch_input_for_postbinning = params.exclude_unbins_from_postbinning
             ? ch_input_for_postbinning_bins
-            : ch_input_for_postbinning_bins_unbins
+            : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
 
-        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths, ch_short_reads)
-        ch_input_for_binsummary = DEPTHS.out.depths_summary
+        // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
+        // read channel are not empty
+        ch_reads_for_depths = ch_short_reads
+            .map { meta, reads -> [[id: meta.id, group: meta.group], [short_reads: reads, long_reads: []]] }
+            .mix(
+                ch_long_reads.map { meta, reads -> [[id: meta.id, group: meta.group], [short_reads: [], long_reads: reads]] }
+            )
+            .groupTuple(by: 0)
+
+        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths, ch_reads_for_depths)
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
+
+        ch_input_for_binsummary = DEPTHS.out.depths_summary
 
         /*
         * Bin QC subworkflows: for checking bin completeness with either BUSCO, CHECKM, CHECKM2, and/or GUNC
         */
 
+        ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
             BIN_QC(ch_input_for_postbinning)
 
@@ -739,7 +785,7 @@ workflow MAG {
     }
 
     if (!params.skip_binning || params.ancient_dna) {
-        ch_multiqc_files = ch_multiqc_files.mix(BINNING_PREPARATION.out.bowtie2_assembly_multiqc.collect().ifEmpty([]))
+        ch_multiqc_files = ch_multiqc_files.mix(BINNING_PREPARATION.out.multiqc_files.collect().ifEmpty([]))
     }
 
     if (!params.skip_binning && !params.skip_prokka) {

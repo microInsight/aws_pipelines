@@ -9,12 +9,12 @@ process BRACKEN_BRACKEN {
 
     input:
     tuple val(meta), path(kraken_report)
-    path(database)
+    path database
 
     output:
-    tuple val(meta), path(bracken_report)        , emit: reports
+    tuple val(meta), path(bracken_report)             , emit: reports
     tuple val(meta), path(bracken_kraken_style_report), emit: txt
-    path "versions.yml"          , emit: versions
+    path "versions.yml"                               , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -30,7 +30,6 @@ process BRACKEN_BRACKEN {
         -d '${database}' \\
         -i '${kraken_report}' \\
         -o '${bracken_report}' \\
-        -l 'G' \\
         -w '${bracken_kraken_style_report}'
 
     cat <<-END_VERSIONS > versions.yml
