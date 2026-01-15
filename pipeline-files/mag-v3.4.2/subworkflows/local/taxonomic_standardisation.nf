@@ -77,8 +77,8 @@ workflow TAXONOMIC_STANDARDISATION {
 
     TAXPASTA_MERGE(ch_input_for_taxpasta_merge.profiles, ch_input_for_taxpasta_merge.tool, 'tsv', ch_taxpasta_tax_dir)
     TAXPASTA_STANDARDISE(ch_input_for_taxpasta_standardise.profiles, ch_input_for_taxpasta_standardise.tool, 'tsv', ch_taxpasta_tax_dir)
-    ch_versions = ch_versions.mix(TAXPASTA_MERGE.out.versions.first())
-    ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE.out.versions.first())
+    ch_versions = ch_versions.mix(TAXPASTA_MERGE.out.versions)
+    ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE.out.versions)
 
     /*
         Split profile results based on tool they come from
@@ -117,11 +117,10 @@ workflow TAXONOMIC_STANDARDISATION {
     PLOT_CENTRIFUGER(
         TAXPASTA_STANDARDISE.out.standardised_profile,
         "Centrifuger, Taxpasta",
-        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
-        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
         file(params.tax_prof_template, checkIfExists: true)
     )
-    ch_versions = ch_versions.mix(PLOT_CENTRIFUGER.out.versions)
 
     // Kraken2
 
@@ -140,11 +139,10 @@ workflow TAXONOMIC_STANDARDISATION {
     PLOT_KRAKEN2(
         TAXPASTA_STANDARDISE.out.standardised_profile,
         "Kraken2, Taxpasta",
-        Channel.value(file("/mnt/workflow/definition/mag-v3.4.2/data/gtdb_r220_metadata.tsv.gz", checkIfExists: true)),
-        file("/mnt/workflow/definition/mag-v3.4.2/conf/images/mi_logo.png"),
+        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
         file(params.tax_prof_template, checkIfExists: true)
     )
-    ch_versions = ch_versions.mix(PLOT_KRAKEN2.out.versions)
 
     KRAKENTOOLS_COMBINEKREPORTS_KRAKEN(ch_profiles_for_kraken2)
     ch_multiqc_files = ch_multiqc_files.mix(KRAKENTOOLS_COMBINEKREPORTS_KRAKEN.out.txt)

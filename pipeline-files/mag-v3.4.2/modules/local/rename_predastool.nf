@@ -28,5 +28,10 @@ process RENAME_PREDASTOOL {
             fi
         done
     fi
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        coreutils: \$(echo \$(mv --version 2>&1) | sed 's/^.*(GNU coreutils) //; s/ Copyright.*\$//')
+    END_VERSIONS
     """
 }

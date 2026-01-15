@@ -99,7 +99,7 @@
                     "fa_icon": "fas fa-cut"
                 },
                 "trim_nextseq": {
-                    "type": "integer",
+                    "type": "string",
                     "description": "Instructs Trim Galore to apply the --nextseq=X option, to trim based on quality after removing poly-G tails.",
                     "help_text": "This enables the option Cutadapt `--nextseq-trim=3'CUTOFF` option via Trim Galore, which will set a quality cutoff (that is normally given with -q instead), but qualities of G bases are ignored. This trimming is in common for the NextSeq- and NovaSeq-platforms, where basecalls without any signal are called as high-quality G bases.",
                     "fa_icon": "fas fa-cut"
@@ -241,7 +241,7 @@
             "properties": {
                 "orf_caller": {
                     "type": "string",
-                    "enum": ["prodigal", "prokka", "transdecoder"],
+                    "enum": ["prodigal", "pyrodigal", "prokka", "transdecoder"],
                     "description": "Specify which ORF caller to run. Possible alternatives: prodigal, prokka, transdecoder. This needs to be set unless the `--user_orfs_*` params are set.",
                     "fa_icon": "fas fa-phone-volume"
                 },
@@ -280,6 +280,42 @@
                     "hidden": true,
                     "help_text": "Prokka usually fails on very large input files. This parameter controls the size of smaller batches for which Prokka will be called. Should be a string in the format integer-unit e.g. `--prokka_batchsize '8.MB'`",
                     "fa_icon": "fas fa-expand-alt"
+                },
+                "save_annotations": {
+                    "type": "boolean",
+                    "description": "Specify whether to save gene annotations in the results directory.",
+                    "fa_icon": "fas fa-save"
+                },
+                "pyrodigal_singlemode": {
+                    "type": "boolean",
+                    "fa_icon": "far fa-circle",
+                    "description": "Specify whether to use Pyrodigal's single-genome mode for long sequences.",
+                    "help_text": "By default Pyrodigal runs in 'single genome' mode that requires sequence lengths to be equal or longer than 20000 characters.\n\nHowever, more fragmented reads from MAGs often result in contigs shorter than this. Therefore, we will run with the `meta` mode by default, but providing this parameter allows to override this and run in single genome mode again.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s): \n> - PYRODIGAL: `-p`"
+                },
+                "pyrodigal_closed": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-arrows-alt-h",
+                    "description": "Does not allow partial genes on contig edges.",
+                    "help_text": "Suppresses partial genes from being on contig edge, resulting in closed ends. Should only be activated for genomes where it is sure the first and last bases of the sequence(s) do not fall inside a gene. Run together with `-p single` .\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-c`"
+                },
+                "pyrodigal_transtable": {
+                    "type": "integer",
+                    "default": 11,
+                    "fa_icon": "fas fa-border-all",
+                    "description": "Specifies the translation table used for gene annotation.",
+                    "help_text": "Specifies which translation table should be used for seqeunce annotation. All possible genetic code translation tables can be found [here](https://en.wikipedia.org/wiki/List_of_genetic_codes). The default is set at 11, which is used for standard Bacteria/Archeae.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-g`"
+                },
+                "pyrodigal_forcenonsd": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-barcode",
+                    "description": "Forces Pyrodigal to scan for motifs.",
+                    "help_text": "Forces Pyrodigal to a full scan for motifs rather than activating the Shine-Dalgarno RBS finder, the default scanner for Pyrodigal to train for motifs.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `-n`"
+                },
+                "pyrodigal_usespecialstopchar": {
+                    "type": "boolean",
+                    "fa_icon": "fa fa-star-of-life",
+                    "description": "This forces Pyrodigal to append asterisks (`*`) as stop codon indicators. Do not use when running AMP workflow.",
+                    "help_text": "Some downstream tools like AMPlify cannot process sequences containing non-sequence characters like the stop codon indicator `*`. Thus, this flag is deactivated by default. Activate this flag to revert the behaviour and have Pyrodigal append `*` as stop codon indicator to annotated sequences.\n\nFor more information check the Pyrodigal [documentation](https://pyrodigal.readthedocs.io).\n\n> Modifies tool parameter(s):\n> - PYRODIGAL: `--no-stop-codon`"
                 }
             },
             "fa_icon": "fas fa-phone-volume"
@@ -524,12 +560,6 @@
                     "fa_icon": "far fa-check-circle",
                     "description": "Base URL or local path to location of pipeline test dataset files",
                     "default": "https://raw.githubusercontent.com/nf-core/test-datasets/",
-                    "hidden": true
-                },
-                "ecr_registry": {
-                    "type": "string",
-                    "description": "Amazon ECR registry to use for container images",
-                    "fa_icon": "fas fa-cog",
                     "hidden": true
                 },
                 "trace_report_suffix": {

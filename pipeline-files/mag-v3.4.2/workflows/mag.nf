@@ -98,7 +98,7 @@ workflow MAG {
     }
 
     if (params.tax_prof_gtdb_metadata) {
-        tax_prof_gtdb_metadata = Channel.fromPath("${params.tax_prof_gtdb_metadata}", checkIfExists: true).first()
+        tax_prof_gtdb_metadata = Channel.fromPath("${params.tax_prof_gtdb_metadata}", checkIfExists: true)
     }
     else {
         tax_prof_gtdb_metadata = Channel.empty()
@@ -119,7 +119,7 @@ workflow MAG {
     }
 
     if (params.krona_db) {
-        ch_krona_db_file = Channel.fromPath("${params.krona_db}", checkIfExists: true).first()
+        ch_krona_db_file = Channel.fromPath("${params.krona_db}", checkIfExists: true)
     }
     else {
         ch_krona_db_file = Channel.empty()
@@ -330,7 +330,7 @@ workflow MAG {
                 [meta_new, assembly]
             }
             ch_assembled_contigs = ch_assembled_contigs.mix(ch_spades_assemblies)
-            ch_versions = ch_versions.mix(METASPADES.out.versions.first())
+            ch_versions = ch_versions.mix(METASPADES.out.versions)
         }
 
         if (!params.single_end && !params.skip_spadeshybrid) {
@@ -347,7 +347,7 @@ workflow MAG {
                 [meta_new, assembly]
             }
             ch_assembled_contigs = ch_assembled_contigs.mix(ch_spadeshybrid_assemblies)
-            ch_versions = ch_versions.mix(METASPADESHYBRID.out.versions.first())
+            ch_versions = ch_versions.mix(METASPADESHYBRID.out.versions)
         }
 
         if (!params.skip_megahit) {
@@ -357,7 +357,7 @@ workflow MAG {
                 [meta_new, assembly]
             }
             ch_assembled_contigs = ch_assembled_contigs.mix(ch_megahit_assemblies)
-            ch_versions = ch_versions.mix(MEGAHIT.out.versions.first())
+            ch_versions = ch_versions.mix(MEGAHIT.out.versions)
         }
 
         GUNZIP_ASSEMBLIES(ch_assembled_contigs)
@@ -383,7 +383,7 @@ workflow MAG {
 
     if (!params.skip_quast) {
         QUAST(ch_assemblies)
-        ch_versions = ch_versions.mix(QUAST.out.versions.first())
+        ch_versions = ch_versions.mix(QUAST.out.versions)
     }
 
     /*
@@ -411,7 +411,7 @@ workflow MAG {
             ch_assemblies,
             'gff',
         )
-        ch_versions = ch_versions.mix(PRODIGAL.out.versions.first())
+        ch_versions = ch_versions.mix(PRODIGAL.out.versions)
     }
 
 
@@ -424,7 +424,7 @@ workflow MAG {
 
     if (params.run_virus_identification) {
         VIRUS_IDENTIFICATION(ch_assemblies, ch_genomad_db)
-        ch_versions = ch_versions.mix(VIRUS_IDENTIFICATION.out.versions.first())
+        ch_versions = ch_versions.mix(VIRUS_IDENTIFICATION.out.versions)
     }
 
     /*
@@ -453,7 +453,7 @@ workflow MAG {
 
     if (params.ancient_dna) {
         ANCIENT_DNA_ASSEMBLY_VALIDATION(BINNING_PREPARATION.out.grouped_mappings)
-        ch_versions = ch_versions.mix(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.versions.first())
+        ch_versions = ch_versions.mix(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.versions)
     }
 
     /*
@@ -602,7 +602,7 @@ workflow MAG {
                 }
 
             QUAST_BINS(ch_input_for_quast_bins)
-            ch_versions = ch_versions.mix(QUAST_BINS.out.versions.first())
+            ch_versions = ch_versions.mix(QUAST_BINS.out.versions)
             ch_quast_bin_summary = QUAST_BINS.out.quast_bin_summaries.collectFile(keepHeader: true) { meta, summary ->
                 ["${meta.id}.tsv", summary]
             }

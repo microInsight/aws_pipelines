@@ -1,6 +1,7 @@
 process COMEBIN_RUNCOMEBIN {
     tag "${meta.id}"
-    accelerator 1, type: "nvidia-tesla-a10g"
+    label 'process_high'
+    accelerator 1, type: 'nvidia-tesla-a10g' // have to specify GPU (accelerator) type here
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

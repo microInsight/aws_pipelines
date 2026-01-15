@@ -10,6 +10,7 @@ process BRACKEN_BRACKEN {
     input:
     tuple val(meta), path(kraken_report)
     path database
+    val level
 
     output:
     tuple val(meta), path(bracken_report)             , emit: reports
@@ -30,6 +31,7 @@ process BRACKEN_BRACKEN {
         -d '${database}' \\
         -i '${kraken_report}' \\
         -o '${bracken_report}' \\
+        -l '${level}' \\
         -w '${bracken_kraken_style_report}'
 
     cat <<-END_VERSIONS > versions.yml

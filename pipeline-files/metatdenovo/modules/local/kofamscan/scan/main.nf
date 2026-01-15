@@ -30,8 +30,8 @@ process KOFAMSCAN_SCAN {
     $gunzip
 
     exec_annotation \\
-        --profile ${koprofiles} \\
-        --ko-list ${ko_list} \\
+        --profile $koprofiles \\
+        --ko-list $ko_list \\
         --format detail-tsv \\
         --cpu $task.cpus \\
         $input \\

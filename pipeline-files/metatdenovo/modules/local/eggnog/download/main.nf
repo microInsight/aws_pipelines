@@ -1,5 +1,5 @@
 process EGGNOG_DOWNLOAD {
-    tag "EggNOG"
+    tag 'EggNOG'
     label 'process_low'
 
     conda "${moduleDir}/environment.yml"

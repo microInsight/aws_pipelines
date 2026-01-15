@@ -38,6 +38,7 @@ process EGGNOG_MAPPER {
         --cpu $task.cpus \\
         --data_dir eggnog \\
         --output $prefix \\
+        --dbmem \\
         -i $input
 
     gzip ${prefix}.emapper.*
