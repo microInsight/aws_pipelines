@@ -169,10 +169,6 @@ workflow FUNCSCAN {
         ch_taxonomy_tsv = TAXA_CLASS.out.sample_taxonomy
     }
     else {
-
-        ch_mmseqs_db = Channel.empty()
-        ch_taxonomy_querydb = Channel.empty()
-        ch_taxonomy_querydb_taxdb = Channel.empty()
         ch_taxonomy_tsv = Channel.empty()
     }
 
@@ -203,7 +199,7 @@ workflow FUNCSCAN {
             }
         }
     } else {
-        ch_interproscan_tsv = ch_prepped_input.faas.map { meta, _ ->
+        ch_interproscan_tsv = ch_prepped_input.faas.map { meta, _r ->
             [meta, []]
         }
     }

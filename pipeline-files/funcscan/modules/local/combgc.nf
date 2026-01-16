@@ -20,6 +20,8 @@ process COMBGC {
     script: // This script is bundled with the pipeline, in nf-core/funcscan/bin/
     prefix = task.ext.prefix ?: "${meta.id}"
     """
+    chmod +x /mnt/workflow/definition/funcscan/bin/comBGC.py
+    
     comBGC.py \\
         -i $input_paths \\
         -o $prefix

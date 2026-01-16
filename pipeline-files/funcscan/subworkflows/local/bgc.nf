@@ -3,7 +3,6 @@
 */
 
 include { UNTAR as UNTAR_ANTISMASHDB             } from '../../modules/nf-core/untar/main'
-include { ANTISMASH_ANTISMASHDOWNLOADDATABASES   } from '../../modules/nf-core/antismash/antismashdownloaddatabases/main'
 include { ANTISMASH_ANTISMASH                    } from '../../modules/nf-core/antismash/antismash/main'
 include { GECCO_RUN                              } from '../../modules/nf-core/gecco/run/main'
 include { HMMER_HMMSEARCH as BGC_HMMER_HMMSEARCH } from '../../modules/nf-core/hmmer/hmmsearch/main'
@@ -37,13 +36,8 @@ workflow BGC {
             UNTAR_ANTISMASHDB([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
             ch_antismash_databases = UNTAR_ANTISMASHDB.out.untar.map { _meta, dir -> [dir] }
         }
-        else if (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).isDirectory()) {
+        else (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).isDirectory()) {
             ch_antismash_databases = Channel.fromPath(params.bgc_antismash_db, checkIfExists: true).first()
-        }
-        else {
-            ANTISMASH_ANTISMASHDOWNLOADDATABASES()
-            ch_versions = ch_versions.mix(ANTISMASH_ANTISMASHDOWNLOADDATABASES.out.versions)
-            ch_antismash_databases = ANTISMASH_ANTISMASHDOWNLOADDATABASES.out.database
         }
 
         ANTISMASH_ANTISMASH(gbks, ch_antismash_databases, [])

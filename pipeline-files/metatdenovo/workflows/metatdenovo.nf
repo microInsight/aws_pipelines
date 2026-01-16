@@ -27,7 +27,7 @@ include { SUB_EUKULELE                               } from '../subworkflows/loc
 include { HMMCLASSIFY                                } from '../subworkflows/local/hmmclassify/main'
 include { PROKKA_SUBSETS                             } from '../subworkflows/local/prokka/subsets/main'
 include { FASTQC_TRIMGALORE                          } from '../subworkflows/local/fastqc/trimgalore/main'
-include { PRODIGAL                                   } from '../subworkflows/local/prodigal/main'
+include { PRODIGAL as PRODIGAL_WF                    } from '../subworkflows/local/prodigal/main'
 include { KOFAMSCAN                                  } from '../subworkflows/local/kofamscan/main'
 include { PIPELINE_INITIALISATION                    } from '../subworkflows/local/utils_nfcore_metatdenovo_pipeline'
 include { PIPELINE_COMPLETION                        } from '../subworkflows/local/utils_nfcore_metatdenovo_pipeline'
@@ -211,7 +211,7 @@ workflow METATDENOVO {
     // Join the three channels with the originally zipped to form a new ch_fastq of the same structure as the original
     ch_fastq = fwd.zipped.concat(PIGZ_PE_READS_FWD.out.archive)
         .join(rev.zipped.concat(PIGZ_PE_READS_REV.out.archive))
-        .map { meta, fwd, rev -> [ meta, [ fwd, rev ] ] }
+        .map { meta, fwd_r, rev_r -> [ meta, [ fwd, rev ] ] }
         .concat(
             se.zipped
                 .concat(PIGZ_SE_READS.out.archive)
@@ -379,13 +379,13 @@ workflow METATDENOVO {
     //        
     // MODULE: Run PRODIGAL on assembly output.        
     //        
-    if (orf_caller == 'prodigal') {
-        PRODIGAL(ch_assembly_contigs.map { meta, contigs -> [[id: "${assembly_name}.${orfs_name}"], contigs] })
-        ch_protein = PRODIGAL.out.faa
-        ch_versions = ch_versions.mix(PRODIGAL.out.versions)
+    if (orf_caller == 'prodigal' || orf_caller == 'pyrodigal') {
+        PRODIGAL_WF(ch_assembly_contigs.map { meta, contigs -> [[id: "${assembly_name}.${orfs_name}"], contigs] })
+        ch_protein = PRODIGAL_WF.out.faa
+        ch_versions = ch_versions.mix(PRODIGAL_WF.out.versions)
                         
         //UNPIGZ_GFF(PRODIGAL.out.gff.map { meta, gff -> [ [id: "${meta.id}"], gff ] })                
-        UNPIGZ_GFF(PRODIGAL.out.gff)
+        UNPIGZ_GFF(PRODIGAL_WF.out.gff)
         ch_gff = UNPIGZ_GFF.out.unzipped
         ch_versions = ch_versions.mix(UNPIGZ_GFF.out.versions)
     }

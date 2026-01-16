@@ -84,7 +84,7 @@ workflow TAXONOMIC_STANDARDISATION {
     */
     ch_input_profiles = profiles.branch {
         bracken: it[0]['tool'] == 'bracken'
-        centrifuge: it[0]['tool'] == 'centrifuge'
+        centrifuge: it[0]['tool'] == 'centrifuge' || it[0]['tool'] == 'centrifuge-bracken'
         kraken2: it[0]['tool'] == 'kraken2' || it[0]['tool'] == 'kraken2-bracken'
         unknown: true
     }

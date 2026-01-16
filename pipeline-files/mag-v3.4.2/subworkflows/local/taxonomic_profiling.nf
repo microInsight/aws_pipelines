@@ -79,8 +79,15 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_KRAKEN2.out.reports)
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_KRAKEN2.out.reports)
 
+    br_k2_reports = BRACKEN_KRAKEN2.out.reports.mix(
+        BRACKEN_KRAKEN2.out.reports.map {id, brkreport ->
+            def meta = [id: id]
+            [meta, brkreport]
+            }
+    )
+
     PLOT_KRAKEN2BRACKEN(
-        BRACKEN_KRAKEN2.out.reports,
+        br_k2_reports,
         "Kraken2, Bracken",
         Channel.value(params.tax_prof_gtdb_metadata),
         file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
@@ -117,13 +124,20 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_CENTRIFUGER.out.reports)
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
+    br_cent_reports = BRACKEN_CENTRIFUGER.out.reports.mix(
+        BRACKEN_CENTRIFUGER.out.reports.map {id, brcreport ->
+            def meta = [id: id]
+            [meta, brcreport]
+            }
+    )
+        //https://training.nextflow.io/2.2/side_quests/splitting_and_grouping/#52-reorganise-the-data
     PLOT_CENTRIFUGERBRACKEN(
-        BRACKEN_CENTRIFUGER.out.reports,
+        br_cent_reports,
         "Centrifuger, Bracken",
         Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
         file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
         file(params.tax_prof_template, checkIfExists: true)
-        )
+    )
     ch_parsedreports = ch_parsedreports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
     TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)

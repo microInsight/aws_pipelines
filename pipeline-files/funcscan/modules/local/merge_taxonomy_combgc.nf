@@ -19,6 +19,8 @@ process MERGE_TAXONOMY_COMBGC {
 
     script: // This script is bundled with the pipeline, in nf-core/funcscan/bin/
     """
+    chmod +x /mnt/workflow/definition/funcscan/bin/merge_taxonomy.py
+    
     merge_taxonomy.py \\
         combgc_taxa \\
         --combgc $combgc_df \\

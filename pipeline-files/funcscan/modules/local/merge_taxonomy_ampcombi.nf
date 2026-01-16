@@ -19,6 +19,8 @@ process MERGE_TAXONOMY_AMPCOMBI {
 
     script: // This script is bundled with the pipeline, in nf-core/funcscan/bin/
     """
+    chmod +x /mnt/workflow/definition/funcscan/bin/merge_taxonomy.py
+    
     merge_taxonomy.py \\
         ampcombi_taxa \\
         --ampcombi $ampcombi_df \\

@@ -16,24 +16,36 @@ workflow PROKKA_SUBSETS {
     main:
     ch_versions = Channel.empty()
 
-    PROKKA ( contigs.map{ meta, contigs -> contigs }.splitFasta(size: batchsize, file: true).map { contigs -> [ [ id: contigs.getBaseName() ], contigs] }, [], []  )
+    PROKKA ( contigs
+        .map{ meta, ncontigs -> contigs }
+        .splitFasta(size: batchsize, file: true)
+        .map { ncontigs -> [ [ id: contigs.getBaseName() ], contigs] }, 
+        [], 
+        []  
+        )
     ch_versions = ch_versions.mix(PROKKA.out.versions)
     ch_log  = PROKKA.out.txt.map { meta, log -> log }.collect()
-    contigs.map{ meta, contigs -> [ id:"${meta.id}.prokka" ] }
-        .combine(PROKKA.out.gff.collect { meta, gff -> gff }.map { [ it ] })
+
+    contigs
+        .map{ meta, ncontigs -> [ id:"${meta.id}.prokka" ] }
+        .combine(PROKKA.out.gff.collect { meta, gff -> gff }
+        .map { [ it ] })
         .set { ch_gff }
+
     GFF_CAT ( ch_gff )
     ch_versions = ch_versions.mix(GFF_CAT.out.versions)
 
-    contigs.map{ meta, contigs -> [ id:"${meta.id}.prokka" ] }
+    contigs.map{ meta, ncontigs -> [ id:"${meta.id}.prokka" ] }
         .combine(PROKKA.out.faa.collect { meta, protein -> protein }.map { [ it ] })
         .set { ch_faa }
+
     FAA_CAT ( ch_faa )
     ch_versions = ch_versions.mix(FAA_CAT.out.versions)
 
-    contigs.map{ meta, contigs -> [ id:"${meta.id}.prokka" ] }
+    contigs.map{ meta, ncontigs -> [ id:"${meta.id}.prokka" ] }
         .combine(PROKKA.out.ffn.collect { meta, fnn -> fnn }.map { [ it ] })
         .set { ch_ffn }
+
     FFN_CAT ( ch_ffn )
     ch_versions = ch_versions.mix(FFN_CAT.out.versions)
 
