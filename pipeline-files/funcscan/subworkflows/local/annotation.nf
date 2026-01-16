@@ -13,6 +13,7 @@ include { GUNZIP as GUNZIP_PRODIGAL_GBK  } from '../../modules/nf-core/gunzip/ma
 include { GUNZIP as GUNZIP_PYRODIGAL_FNA } from '../../modules/nf-core/gunzip/main'
 include { GUNZIP as GUNZIP_PYRODIGAL_FAA } from '../../modules/nf-core/gunzip/main'
 include { GUNZIP as GUNZIP_PYRODIGAL_GBK } from '../../modules/nf-core/gunzip/main'
+include { UNTAR                          } from '../../modules/nf-core/untar/main'
 
 workflow ANNOTATION {
     take:
@@ -68,17 +69,25 @@ workflow ANNOTATION {
         ch_annotation_gbk = PROKKA.out.gbk
     }
     else if (params.annotation_tool == "bakta") {
-
+        ch_bakta_db = Channel.empty()
         // BAKTA prepare download
-        if (params.annotation_bakta_db) {
+        if (params.annotation_bakta_db.endsWith( ".tar.xz" )) {
+            Channel
+            .value(ch_bakta_db)
+            .map {
+                bakta_db -> [
+                    ['id' : 'bakta_full_database'],
+                    bakta_db
+                    ]
+                }
+                .set { archive }
+
+            UNTAR(archive)
+        }
+        else {
             ch_bakta_db = Channel
                 .fromPath(params.annotation_bakta_db, checkIfExists: true)
                 .first()
-        }
-        else {
-            BAKTA_BAKTADBDOWNLOAD()
-            ch_versions = ch_versions.mix(BAKTA_BAKTADBDOWNLOAD.out.versions)
-            ch_bakta_db = BAKTA_BAKTADBDOWNLOAD.out.db
         }
 
         BAKTA_BAKTA(fasta, ch_bakta_db, [], [])

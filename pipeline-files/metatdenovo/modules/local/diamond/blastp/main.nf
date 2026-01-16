@@ -47,6 +47,7 @@ process DIAMOND_BLASTP {
             break
     }
     if ( args =~ /--compress\s+1/ ) out_ext += '.gz'
+    
     """
     diamond \\
         blastp \\

@@ -25,7 +25,7 @@ include { ARGNORM as ARGNORM_AMRFINDERPLUS } from '../../modules/nf-core/argnorm
 
 workflow ARG {
     take:
-    fastas      // tuple val(meta), path(contigs)
+    fastas_in      // tuple val(meta), path(contigs)
     annotations
     tsvs        // tuple val(meta), path(MMSEQS_CREATETSV.out.tsv)
 
@@ -49,7 +49,7 @@ workflow ARG {
     }
 
     if (!params.arg_skip_amrfinderplus) {
-        AMRFINDERPLUS_RUN(fastas, ch_amrfinderplus_db)
+        AMRFINDERPLUS_RUN(fastas_in, ch_amrfinderplus_db)
         ch_versions = ch_versions.mix(AMRFINDERPLUS_RUN.out.versions)
 
         // Reporting
@@ -68,7 +68,7 @@ workflow ARG {
     if (!params.arg_skip_fargene) {
         ch_fargene_classes = Channel.fromList(params.arg_fargene_hmmmodel.tokenize(','))
 
-        ch_fargene_input = fastas
+        ch_fargene_input = fastas_in
             .combine(ch_fargene_classes)
             .map { meta, fastas, hmm_class ->
                 def meta_new = meta.clone()
@@ -117,7 +117,7 @@ workflow ARG {
             }
         }
 
-        RGI_MAIN(fastas, card, [])
+        RGI_MAIN(fastas_in, card, [])
         ch_versions = ch_versions.mix(RGI_MAIN.out.versions)
 
         // Reporting
@@ -172,7 +172,7 @@ workflow ARG {
     // ABRicate run
     if (!params.arg_skip_abricate) {
         abricate_dbdir = params.arg_abricate_db ? file(params.arg_abricate_db, checkIfExists: true) : []
-        ABRICATE_RUN(fastas, abricate_dbdir)
+        ABRICATE_RUN(fastas_in, abricate_dbdir)
         ch_versions = ch_versions.mix(ABRICATE_RUN.out.versions)
 
         HAMRONIZATION_ABRICATE(ABRICATE_RUN.out.report, 'tsv', '1.0.1', '2021-Mar-27')

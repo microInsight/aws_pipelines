@@ -1,6 +1,5 @@
 // Taxpasta merge and standardise profiling outputs
 
-include { PLOT_TAXHITS                                                           } from '../../modules/local/plot_taxhits'
 include { PLOT_INDVTAXHITS as PLOT_KRAKEN2                                       } from '../../modules/local/plot_indvtaxhits'
 include { PLOT_INDVTAXHITS as PLOT_CENTRIFUGER                                   } from '../../modules/local/plot_indvtaxhits'
 include { PLOT_INDVTAXHITS as PLOT_KRAKEN2BRACKEN                                } from '../../modules/local/plot_indvtaxhits'
