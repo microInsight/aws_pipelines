@@ -65,12 +65,12 @@ workflow TAXONOMIC_PROFILING {
     // get Centrifuger database path
     CENTRIFUGER_GET_DIR(Channel.of([[id: 'db'], file(params.centrifuger_db, checkIfExists: true)]))
 
-    // Kraken2 & Braken classifications - Bracken results summarized at genus level (S) [may change in future or be parameterised]
+    // Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
     KRAKEN2_TAXPROFILING(ch_short_reads, k2_database)
     ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(
         KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
-            [meta + [tool: meta.tool == 'bracken' ? 'kraken2-bracken' : meta.tool], report]
+            [meta + [tool: meta.tool == 'bracken' ? 'kraken2-bracken' : meta.tool] + [classifier: 'kraken2'], report]
         }
     )
 
@@ -79,12 +79,9 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_KRAKEN2.out.reports)
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_KRAKEN2.out.reports)
 
-    br_k2_reports = BRACKEN_KRAKEN2.out.reports.mix(
-        BRACKEN_KRAKEN2.out.reports.map {id, brkreport ->
-            def meta = [id: id]
-            [meta, brkreport]
-            }
-    )
+    br_k2_reports = BRACKEN_KRAKEN2.out.reports
+        .mix()
+        .groupTuple()
 
     PLOT_KRAKEN2BRACKEN(
         br_k2_reports,
@@ -103,7 +100,7 @@ workflow TAXONOMIC_PROFILING {
     CENTRIFUGER_CENTRIFUGER(ch_short_reads, CENTRIFUGER_GET_DIR.out.untar)
     ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results.mix(
         CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
-            [meta , result]
+            [meta  + [classifier: 'centrifuger'], result]
         }
     )
     ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
@@ -112,7 +109,7 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
     ch_taxa_profiles = ch_taxa_profiles.mix(
         CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
-            [meta + [tool: 'centrifuge'], report]
+            [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
         }
     )
     ch_plot_reports = ch_plot_reports.mix(CENTRIFUGER_KREPORT.out.kreport)
@@ -124,12 +121,10 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = ch_taxa_profiles.mix(BRACKEN_CENTRIFUGER.out.reports)
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
-    br_cent_reports = BRACKEN_CENTRIFUGER.out.reports.mix(
-        BRACKEN_CENTRIFUGER.out.reports.map {id, brcreport ->
-            def meta = [id: id]
-            [meta, brcreport]
-            }
-    )
+    br_cent_reports = BRACKEN_CENTRIFUGER.out.reports
+        .mix()
+        .groupTuple()
+
         //https://training.nextflow.io/2.2/side_quests/splitting_and_grouping/#52-reorganise-the-data
     PLOT_CENTRIFUGERBRACKEN(
         br_cent_reports,
