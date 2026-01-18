@@ -24,7 +24,7 @@ process BRACKEN_BRACKEN {
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
     bracken_report = "${prefix}.tsv"
-    bracken_kraken_style_report = "${prefix}.kraken2.report_bracken.txt"
+    bracken_kraken_style_report = "${prefix}.report_bracken.txt"
     """
     bracken \\
         ${args} \\
@@ -44,7 +44,7 @@ process BRACKEN_BRACKEN {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     bracken_report = "${prefix}.tsv"
-    bracken_kraken_style_report = "${prefix}.kraken2.report_bracken.txt"
+    bracken_kraken_style_report = "${prefix}.report_bracken.txt"
     """
     touch ${prefix}.tsv
     touch ${bracken_kraken_style_report}

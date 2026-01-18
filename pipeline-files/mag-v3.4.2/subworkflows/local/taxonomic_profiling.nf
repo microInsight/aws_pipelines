@@ -80,8 +80,10 @@ workflow TAXONOMIC_PROFILING {
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_KRAKEN2.out.reports)
 
     br_k2_reports = BRACKEN_KRAKEN2.out.reports
-        .mix()
-        .groupTuple()
+        .collect()
+        .map { meta, report ->
+            [meta + [tool: 'kraken2-bracken'] + [classifier: 'kraken2'], report]
+        }
 
     PLOT_KRAKEN2BRACKEN(
         br_k2_reports,
@@ -122,10 +124,11 @@ workflow TAXONOMIC_PROFILING {
     ch_plot_reports = ch_plot_reports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
     br_cent_reports = BRACKEN_CENTRIFUGER.out.reports
-        .mix()
-        .groupTuple()
+        .collect()
+        .map { meta, report ->
+            [meta + [tool: 'centrifuge-bracken'] + [classifier: 'centrifuger'], report]
+        }
 
-        //https://training.nextflow.io/2.2/side_quests/splitting_and_grouping/#52-reorganise-the-data
     PLOT_CENTRIFUGERBRACKEN(
         br_cent_reports,
         "Centrifuger, Bracken",
@@ -167,12 +170,8 @@ workflow TAXONOMIC_PROFILING {
 
 
     // Join together for Krona
-    ch_tax_classifications = BRACKEN_KRAKEN2.out.txt
-        .mix(BRACKEN_CENTRIFUGER.out.txt)
-        .map { classifier, meta, report ->
-            def meta_new = meta + [classifier: classifier]
-            [meta_new, report]
-        }
+    ch_tax_classifications = br_k2_reports
+        .mix(br_cent_reports)
 
     KRAKENTOOLS_KREPORT2KRONA(ch_tax_classifications)
 
