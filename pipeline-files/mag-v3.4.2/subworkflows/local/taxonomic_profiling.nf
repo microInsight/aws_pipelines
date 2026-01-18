@@ -170,8 +170,13 @@ workflow TAXONOMIC_PROFILING {
 
 
     // Join together for Krona
-    ch_tax_classifications = br_k2_reports
-        .mix(br_cent_reports)
+    ch_br_k2_txt = BRACKEN_KRAKEN2.out.txt
+        .collect()
+    ch_br_cent_text = BRACKEN_CENTRIFUGER.out.txt
+        .collect()
+
+    ch_tax_classifications = ch_br_k2_txt
+        .mix(ch_br_cent_text)
 
     KRAKENTOOLS_KREPORT2KRONA(ch_tax_classifications)
 
