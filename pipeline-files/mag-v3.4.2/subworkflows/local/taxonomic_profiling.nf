@@ -117,7 +117,7 @@ workflow TAXONOMIC_PROFILING {
         Channel.value(params.tax_prof_gtdb_metadata),
         file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
         file(params.tax_prof_template, checkIfExists: true)
-        )
+    )
     ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
 
     br_cent_reports = BRACKEN.out.reports
@@ -163,10 +163,8 @@ workflow TAXONOMIC_PROFILING {
         )
 
 
-    // Join together for Krona
-    ch_tax_classifications = BRACKEN.out.txt
-
-    KRAKENTOOLS_KREPORT2KRONA(ch_tax_classifications)
+    // Join together for Krona visualisation
+    KRAKENTOOLS_KREPORT2KRONA(BRACKEN.out.txt)
 
     KRONA_KTIMPORTTAXONOMY(
         KRAKENTOOLS_KREPORT2KRONA.out.txt,
