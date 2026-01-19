@@ -22,9 +22,9 @@ include { KRAKENTOOLS_COMBINEKREPORTS as KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER
 */
 def groupProfiles(ch_profiles, groupTupleOptions = [:]) {
     return ch_profiles
-        .map { meta, profile -> [meta.db_name, profile] }
+        .map { meta, profile -> [meta.tool, profile] }
         .groupTuple(groupTupleOptions)
-        .map { db_name, profiles -> [[id: db_name], profiles] }
+        .map { tool, profiles -> [[id: tool], profiles] }
 }
 
 workflow TAXONOMIC_STANDARDISATION {
@@ -37,20 +37,7 @@ workflow TAXONOMIC_STANDARDISATION {
 
     // Taxpasta standardisation
     ch_prepare_for_taxpasta = profiles
-        .map { meta, profile ->
-            def meta_new = [:]
-            meta_new.tool = meta.tool
-            meta_new.db_name = meta.db_name
-            [meta_new, profile]
-        }
         .groupTuple()
-        .map { meta, input_profiles ->
-            meta = meta + [
-                tool: meta.tool == 'kraken2-bracken' ? 'kraken2' : meta.tool,
-                id: meta.tool == 'kraken2-bracken' ? "${meta.db_name}-bracken" : "${meta.db_name}",
-            ]
-            [meta, input_profiles.flatten()]
-        }
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
@@ -82,12 +69,12 @@ workflow TAXONOMIC_STANDARDISATION {
     /*
         Split profile results based on tool they come from
     */
-    ch_input_profiles = profiles.branch {
-        bracken: it[0]['tool'] == 'bracken'
-        centrifuge: it[0]['tool'] == 'centrifuge' || it[0]['tool'] == 'centrifuge-bracken'
-        kraken2: it[0]['tool'] == 'kraken2' || it[0]['tool'] == 'kraken2-bracken'
-        unknown: true
-    }
+    ch_input_profiles = profiles
+        .branch { _meta, _profile, tool ->
+            bracken: tool =~ /(bracken)/
+            centrifuge: tool == 'centrifuge'
+            kraken2: tool == 'kraken2'
+        }
 
     /*
         Standardise and aggregate
@@ -127,11 +114,7 @@ workflow TAXONOMIC_STANDARDISATION {
     // Have to sort by size to ensure first file actually has hits otherwise
     // the script fails
     ch_profiles_for_kraken2 = groupProfiles(
-        ch_input_profiles.kraken2.map { meta, profile ->
-            // Replace database name, to get the right output description.
-            def db_name = meta.tool == 'kraken2-bracken' ? "${meta.db_name}-bracken" : "${meta.db_name}"
-            return [meta + [db_name: db_name], profile]
-        },
+        ch_input_profiles.kraken2,
         [sort: { -it.size() }],
     )
 

@@ -25,7 +25,7 @@ input:
     - kraken_report:
         type: file
         description: TSV file with six columns coming from kraken2 output
-        pattern: "*.{tsv}"
+        pattern: "*.{txt,tsv}"
         ontologies:
           - edam: http://edamontology.org/format_3475 # TSV
   - database:
