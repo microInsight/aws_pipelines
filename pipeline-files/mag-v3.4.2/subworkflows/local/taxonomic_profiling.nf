@@ -36,143 +36,279 @@ workflow TAXONOMIC_PROFILING {
     ch_taxa_profiles = Channel.empty()
     ch_plot_reports = Channel.empty()
 
+    // Add tool and classifier information to meta map
+    if (params.centrifuger_db && !params.kraken2_db) {
+        ch_short_reads_class = ch_short_reads.map { meta, reads ->
+            [meta + [classifier: 'centrifuger'], reads]
+        }
+    }
+    else if (params.kraken2_db && !params.centrifuger_db) {
+        ch_short_reads_class = ch_short_reads.map { meta, reads ->
+            [meta + [classifier: 'kraken2'], reads]
+        }
+    }
+    else if (params.kraken2_db && params.centrifuger_db) {
+        ch_k2_reads = ch_short_reads
+            .map { meta, reads ->
+                [meta + [classifier: 'kraken2'], reads]
+            }
+            .map { meta, reads ->
+                [meta.id, meta, reads]
+            }
+
+        ch_cent_reads = ch_short_reads
+            .map { meta, reads ->
+                [meta + [classifier: 'centrifuger'], reads]
+            }
+            .map { meta, reads ->
+                [meta.id, meta, reads]
+            }
+
+        ch_short_reads_class = ch_k2_reads.join(ch_cent_reads)
+    }
+    else {
+        error("At least one of 'kraken2_db' or 'centrifuger_db' parameters must be provided for taxonomic profiling.")
+    }
+
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? Channel.fromPath(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
     // untar Kraken2 databases from .tar.gz file input and pull out the k2_database folder
     ch_kraken2_db = file(params.kraken2_db, checkifExists: true)
-    if (ch_kraken2_db.name.endsWith( ".tar.gz" )) {
-            Channel
-            .value(ch_kraken2_db)
-            .map {
-                kraken2_db -> [
-                    ['id' : 'kraken2_database'],
-                    kraken2_db
-                    ]
-                }
-                .set { archive }
+    if (ch_kraken2_db.name.endsWith(".tar.gz")) {
+        Channel.value(ch_kraken2_db)
+            .map { kraken2_db ->
+                [
+                    ['id': 'kraken2_database'],
+                    kraken2_db,
+                ]
+            }
+            .set { archive }
 
-            UNTAR ( archive )
+        UNTAR(archive)
 
-            k2_database    = UNTAR.out.untar.map{ it -> it[1] }
-            ch_versions = ch_versions.mix(UNTAR.out.versions.first())
-
-    } else {
-            k2_database = Channel.fromPath(params.kraken2_db)
+        k2_database = UNTAR.out.untar.map { it -> it[1] }
+        ch_versions = ch_versions.mix(UNTAR.out.versions.first())
+    }
+    else {
+        k2_database = Channel.fromPath(params.kraken2_db)
     }
 
     // get Centrifuger database path
     CENTRIFUGER_GET_DIR(Channel.of([[id: 'db'], file(params.centrifuger_db, checkIfExists: true)]))
 
-    // Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
-    KRAKEN2_TAXPROFILING(ch_short_reads, k2_database)
-    ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
-    ch_taxa_profiles = ch_taxa_profiles.mix(
-        KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
+    // Note : Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
+    // add conditional execution for each classifier in case only one provided
+    // Kraken2 taxonomic profiling - no Centrifuger
+    if (params.kraken2_db && !params.centrifuger_db) {
+        KRAKEN2_TAXPROFILING(ch_short_reads_class, k2_database)
+        ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
+                [meta + [tool: 'kraken2'] + [classifier: 'kraken2'], report]
+            }
+        )
+
+        TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, 'kraken2', 'tsv', ch_taxpasta_tax_dir)
+        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile)
+        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
+
+        ch_bracken_input = KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
             [meta + [tool: 'kraken2'] + [classifier: 'kraken2'], report]
         }
-    )
 
-    TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, 'kraken2', 'tsv', ch_taxpasta_tax_dir)
-    ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile)
-    ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
+        BRACKEN(ch_bracken_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN.out.versions)
 
-    // Centrifuger taxonomic profiling
-    CENTRIFUGER_CENTRIFUGER(ch_short_reads, CENTRIFUGER_GET_DIR.out.untar)
-    ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results.mix(
-        CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
-            [meta + [tool: 'centrifuger'] + [classifier: 'centrifuger'], result]
+        ch_bracken_results = BRACKEN.out.reports.map { meta, report ->
+            [meta + [tool: 'kraken2-bracken'] + [classifier: meta.classifier], report]
         }
-    )
-    ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
+        ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
+        ch_plot_reports = ch_plot_reports.mix(BRACKEN.out.reports)
 
-    CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
-    ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
-    ch_taxa_profiles = ch_taxa_profiles.mix(
-        CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
-            [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
+        ch_bracken_plot_input = ch_bracken_results.branch { _meta, _report, classifier ->
+            kraken2: classifier == 'kraken2'
         }
-    )
-    ch_plot_reports = ch_plot_reports.mix(CENTRIFUGER_KREPORT.out.kreport)
-    ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
-    // Bracken on Centrifuger Kraken-style outputs & Kraken2 outputs
-    ch_bracken_input = KRAKEN2_TAXPROFILING.out.report
-        .map { meta, report ->
+        PLOT_KRAKEN2BRACKEN(
+            ch_bracken_plot_input.kraken2,
+            "Kraken2, Bracken",
+            Channel.value(params.tax_prof_gtdb_metadata),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
+    }
+    else if (params.centrifuger_db && !params.kraken2_db) {
+        // Centrifuger taxonomic profiling - no Kraken2
+        CENTRIFUGER_CENTRIFUGER(ch_short_reads_class, CENTRIFUGER_GET_DIR.out.untar)
+        ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results.mix(
+            CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
+                [meta + [tool: 'centrifuger'] + [classifier: 'centrifuger'], result]
+            }
+        )
+        ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
+
+        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
+                [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
+            }
+        )
+        ch_plot_reports = ch_plot_reports.mix(CENTRIFUGER_KREPORT.out.kreport)
+        ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
+
+        ch_bracken_input = KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
             [meta + [tool: 'kraken2'] + [classifier: 'kraken2'], report]
         }
-    ch_bracken_input = ch_bracken_input
-        .mix(CENTRIFUGER_KREPORT.out.kreport
-            .map { meta, report ->
+        ch_bracken_input = ch_bracken_input.mix(
+            CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
                 [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
             }
         )
 
-    BRACKEN(ch_bracken_input, k2_database, 'S')
-    ch_versions = ch_versions.mix(BRACKEN.out.versions)
+        BRACKEN(ch_bracken_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN.out.versions)
 
-    ch_bracken_results = BRACKEN.out.reports
-        .map { meta, report ->
-        def br_tool = meta.classifier == 'kraken2' ? 'kraken2-bracken' : 'centrifuge-bracken'
+        ch_bracken_results = BRACKEN.out.reports.map { meta, report ->
+            def br_tool = meta.classifier == 'kraken2' ? 'kraken2-bracken' : 'centrifuge-bracken'
             [meta + [tool: br_tool] + [classifier: meta.classifier], report]
         }
-    ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
-    ch_plot_reports = ch_plot_reports.mix(BRACKEN.out.reports)
+        ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
+        ch_plot_reports = ch_plot_reports.mix(BRACKEN.out.reports)
 
-    ch_bracken_plot_input = ch_bracken_results
-        .branch { _meta, _report, classifier ->
+        ch_bracken_plot_input = ch_bracken_results.branch { _meta, _report, classifier ->
+            centrifuger: classifier == 'centrifuger'
+        }
+
+        PLOT_CENTRIFUGERBRACKEN(
+            ch_bracken_plot_input.centrifuger,
+            "Centrifuger, Bracken",
+            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
+
+        TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)
+        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
+        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile)
+
+        PLOT_CENTRIFUGER(
+            TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile,
+            "Centrifuger, Taxpasta",
+            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
+    }
+    else {
+        // Regular/Expected case - both Kraken2 and Centrifuger provided
+        KRAKEN2_TAXPROFILING(ch_short_reads_class, k2_database)
+        ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
+                [meta + [tool: 'kraken2'] + [classifier: 'kraken2'], report]
+            }
+        )
+
+        TAXPASTA_STANDARDISE_KRAKEN2(KRAKEN2_TAXPROFILING.out.report, 'kraken2', 'tsv', ch_taxpasta_tax_dir)
+        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile)
+        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
+
+        // Centrifuger taxonomic profiling
+        CENTRIFUGER_CENTRIFUGER(ch_short_reads_class, CENTRIFUGER_GET_DIR.out.untar)
+        ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results.mix(
+            CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
+                [meta + [tool: 'centrifuger'] + [classifier: 'centrifuger'], result]
+            }
+        )
+        ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
+
+        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
+                [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
+            }
+        )
+        ch_plot_reports = ch_plot_reports.mix(CENTRIFUGER_KREPORT.out.kreport)
+        ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
+
+        // Bracken on Centrifuger Kraken-style outputs & Kraken2 outputs
+        ch_bracken_input = KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
+            [meta + [tool: 'kraken2'] + [classifier: 'kraken2'], report]
+        }
+        ch_bracken_input = ch_bracken_input.mix(
+            CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
+                [meta + [tool: 'centrifuge'] + [classifier: 'centrifuger'], report]
+            }
+        )
+
+        BRACKEN(ch_bracken_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN.out.versions)
+
+        ch_bracken_results = BRACKEN.out.reports.map { meta, report ->
+            def br_tool = meta.classifier == 'kraken2' ? 'kraken2-bracken' : 'centrifuge-bracken'
+            [meta + [tool: br_tool] + [classifier: meta.classifier], report]
+        }
+        ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
+        ch_plot_reports = ch_plot_reports.mix(BRACKEN.out.reports)
+
+        ch_bracken_plot_input = ch_bracken_results.branch { _meta, _report, classifier ->
             kraken2: classifier == 'kraken2'
             centrifuger: classifier == 'centrifuger'
         }
 
-    PLOT_KRAKEN2BRACKEN(
-        ch_bracken_plot_input.kraken2,
-        "Kraken2, Bracken",
-        Channel.value(params.tax_prof_gtdb_metadata),
-        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-        file(params.tax_prof_template, checkIfExists: true)
-    )
-    ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
+        PLOT_KRAKEN2BRACKEN(
+            ch_bracken_plot_input.kraken2,
+            "Kraken2, Bracken",
+            Channel.value(params.tax_prof_gtdb_metadata),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
 
-    PLOT_CENTRIFUGERBRACKEN(
-        ch_bracken_plot_input.centrifuger,
-        "Centrifuger, Bracken",
-        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
-        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-        file(params.tax_prof_template, checkIfExists: true)
-    )
-    ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
+        PLOT_CENTRIFUGERBRACKEN(
+            ch_bracken_plot_input.centrifuger,
+            "Centrifuger, Bracken",
+            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
 
-    TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)
-    ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
-    ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile)
+        TAXPASTA_STANDARDISE_CENTRIFUGER(CENTRIFUGER_KREPORT.out.kreport, 'centrifuge', 'tsv', ch_taxpasta_tax_dir)
+        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
+        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile)
 
-    PLOT_CENTRIFUGER(
-        TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile,
-        "Centrifuger, Taxpasta",
-        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
-        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-        file(params.tax_prof_template, checkIfExists: true)
+        PLOT_CENTRIFUGER(
+            TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile,
+            "Centrifuger, Taxpasta",
+            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
         )
 
-    ch_taxhits_input = ch_plot_reports
-        .groupTuple(size: 4)
-        .map { id, reports ->
-            def taxpasta_kraken = reports.find { meta, _report -> meta.tool == 'taxpasta-kraken2' }?.getAt(1)
-            def taxpasta_centrifuger = reports.find { meta, _report -> meta.tool == 'taxpasta-centrifuge' }?.getAt(1)
-            def kraken2_bracken = reports.find {  meta, _report -> meta.tool == 'kraken2-bracken' }?.getAt(1)
-            def centrifuger_bracken = reports.find {  meta, _report -> meta.tool == 'centrifuge-bracken' }?.getAt(1)
-            def meta = [id: id]
-            [meta, taxpasta_kraken, taxpasta_centrifuger, kraken2_bracken, centrifuger_bracken]
-        }
+        ch_taxhits_input = ch_plot_reports
+            .groupTuple(size: 4)
+            .map { id, reports ->
+                def taxpasta_kraken = reports.find { meta, _report -> meta.tool == 'taxpasta-kraken2' }?.getAt(1)
+                def taxpasta_centrifuger = reports.find { meta, _report -> meta.tool == 'taxpasta-centrifuge' }?.getAt(1)
+                def kraken2_bracken = reports.find { meta, _report -> meta.tool == 'kraken2-bracken' }?.getAt(1)
+                def centrifuger_bracken = reports.find { meta, _report -> meta.tool == 'centrifuge-bracken' }?.getAt(1)
+                def meta = [id: id]
+                [meta, taxpasta_kraken, taxpasta_centrifuger, kraken2_bracken, centrifuger_bracken]
+            }
 
-    PLOT_TAXHITS(
-        ch_taxhits_input,
-        file(params.tax_prof_gtdb_metadata, checkIfExists: true),
-        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-        file(params.tax_prof_template, checkIfExists: true)
+        PLOT_TAXHITS(
+            ch_taxhits_input,
+            file(params.tax_prof_gtdb_metadata, checkIfExists: true),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
         )
-
+    }
 
     // Join together for Krona visualisation
     KRAKENTOOLS_KREPORT2KRONA(BRACKEN.out.txt)
@@ -184,11 +320,11 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
 
     emit:
-    profiles           = ch_taxa_profiles
-    ch_taxreports      = ch_parsedreports
-    ch_kreports        = ch_plot_reports
-    ch_multiqc         = ch_multiqc_files
-    versions           = ch_versions
+    profiles      = ch_taxa_profiles
+    ch_taxreports = ch_parsedreports
+    ch_kreports   = ch_plot_reports
+    ch_multiqc    = ch_multiqc_files
+    versions      = ch_versions
 }
 
 // Custom Functions
