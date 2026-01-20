@@ -52,19 +52,17 @@ workflow TAXONOMIC_PROFILING {
             .map { meta, reads ->
                 [meta + [classifier: 'kraken2'], reads]
             }
-            .map { meta, reads ->
-                [meta.id, meta, reads]
-            }
 
         ch_cent_reads = ch_short_reads
             .map { meta, reads ->
                 [meta + [classifier: 'centrifuger'], reads]
             }
-            .map { meta, reads ->
-                [meta.id, meta, reads]
-            }
 
-        ch_short_reads_class = ch_k2_reads.join(ch_cent_reads)
+        ch_short_reads_class = ch_k2_reads
+            .combine(
+                ch_cent_reads,
+                by: 0
+            )
     }
     else {
         error("At least one of 'kraken2_db' or 'centrifuger_db' parameters must be provided for taxonomic profiling.")
