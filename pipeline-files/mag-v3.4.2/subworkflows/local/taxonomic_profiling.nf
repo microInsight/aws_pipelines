@@ -37,28 +37,31 @@ workflow TAXONOMIC_PROFILING {
     ch_plot_reports = Channel.empty()
 
     // Add tool and classifier information to meta map
-    ch_k2_reads = ch_short_reads
+    if (params.kraken2_db) {
+        ch_k2_reads = ch_short_reads
         .map { meta, reads ->
             [meta + [classifier: 'kraken2'], reads]
         }
+    }
+    else {
+        ch_k2_reads = Channel.empty()
+    }
 
+    if (params.centrifuger_db) {
     ch_cent_reads = ch_short_reads
         .map { meta, reads ->
             [meta + [classifier: 'centrifuger'], reads]
         }
-
-    ch_short_reads_class = ch_k2_reads
-        .combine(
-            ch_cent_reads,
-            by: 0
-        )
-
+    }
+    else {
+        ch_cent_reads = Channel.empty()
+    }
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? Channel.fromPath(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
     // untar Kraken2 databases from .tar.gz file input and pull out the k2_database folder
-    ch_kraken2_db = file(params.kraken2_db, checkifExists: true)
+    ch_kraken2_db = file(params.kraken2_db, checkIfExists: true)
     if (ch_kraken2_db.name.endsWith(".tar.gz")) {
         Channel.value(ch_kraken2_db)
             .map { kraken2_db ->
@@ -83,7 +86,7 @@ workflow TAXONOMIC_PROFILING {
 
     // Note : Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
     // add conditional execution for each classifier in case only one provided
-    // Kraken2 taxonomic profiling - no Centrifuger
+     // Kraken2 taxonomic profiling - no Centrifuger
     if (params.kraken2_db && !params.centrifuger_db) {
         KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
@@ -188,8 +191,8 @@ workflow TAXONOMIC_PROFILING {
         )
     }
     else {
-        // Regular/Expected case - both Kraken2 and Centrifuger provided
-        KRAKEN2_TAXPROFILING(ch_short_reads_class, k2_database)
+        // Regular or at least Expected case - both Kraken2 and Centrifuger provided
+        KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
             KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
@@ -202,7 +205,7 @@ workflow TAXONOMIC_PROFILING {
         ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
 
         // Centrifuger taxonomic profiling
-        CENTRIFUGER_CENTRIFUGER(ch_short_reads_class, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
         ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results.mix(
             CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
                 [meta + [tool: 'centrifuger'] + [classifier: 'centrifuger'], result]
@@ -276,7 +279,7 @@ workflow TAXONOMIC_PROFILING {
         )
 
         ch_taxhits_input = ch_plot_reports
-            .groupTuple(size: 4)
+            .groupTuple(size: 5)
             .map { id, reports ->
                 def taxpasta_kraken = reports.find { meta, _report -> meta.tool == 'taxpasta-kraken2' }?.getAt(1)
                 def taxpasta_centrifuger = reports.find { meta, _report -> meta.tool == 'taxpasta-centrifuge' }?.getAt(1)

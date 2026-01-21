@@ -12,7 +12,7 @@ process CENTRIFUGER_KREPORT {
     path(db)
 
     output:
-    tuple val(meta), path('*.kreport.tsv')               , emit: kreport
+    tuple val(meta), path('*_kreport.txt')               , emit: kreport
     path "versions.yml"                                  , emit: versions
 
     when:
@@ -27,7 +27,7 @@ process CENTRIFUGER_KREPORT {
     centrifuger-kreport \\
         -x \$db_name \\
         $results \\
-        $args > ${prefix}.kreport.tsv
+        $args > ${prefix}_kreport.txt
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -558,8 +558,8 @@ workflow MAG {
             }
         }
         else {
-            ch_input_for_postbinning_bins = ch_binning_results_bins
-            ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
+            ch_input_for_postbinning_bins = ch_binning_results_bins.unique()
+            ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins.unique())
         }
 
         ch_input_for_postbinning = params.exclude_unbins_from_postbinning
@@ -575,7 +575,7 @@ workflow MAG {
             )
             .groupTuple(by: 0)
 
-        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths, ch_reads_for_depths)
+        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -586,7 +586,7 @@ workflow MAG {
 
         ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
-            BIN_QC(ch_input_for_postbinning)
+            BIN_QC(ch_input_for_postbinning.unique())
 
             ch_bin_qc_summary = BIN_QC.out.qc_summary
             ch_versions = ch_versions.mix(BIN_QC.out.versions)
@@ -596,6 +596,7 @@ workflow MAG {
         if (!params.skip_quast) {
             ch_input_for_quast_bins = ch_input_for_postbinning
                 .groupTuple()
+                .unique()
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
                     [meta, new_bins]
