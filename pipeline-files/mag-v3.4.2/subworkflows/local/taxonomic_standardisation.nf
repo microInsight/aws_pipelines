@@ -38,6 +38,17 @@ workflow TAXONOMIC_STANDARDISATION {
     // Taxpasta standardisation
     ch_prepare_for_taxpasta = profiles
         .groupTuple()
+        .map { meta, profile ->
+            if (meta.tool =~ /(bracken)/){
+                [meta + [tool: "bracken"], profile]
+            }
+            else if(meta.tool == /centrifuger/) {
+                [meta + [tool: "centrifuge"], profile]
+            }
+            else {
+                [meta, profile]
+            }
+        }
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
@@ -70,10 +81,10 @@ workflow TAXONOMIC_STANDARDISATION {
         Split profile results based on tool they come from
     */
     ch_input_profiles = profiles
-        .branch { _meta, _profile, tool ->
-            bracken: tool =~ /(bracken)/
-            centrifuge: tool == 'centrifuge'
-            kraken2: tool == 'kraken2'
+        .branch { meta, profile ->
+            bracken: meta.tool =~ /(bracken)/
+            centrifuge: meta.tool == 'centrifuge'
+            kraken2: meta.tool == 'kraken2'
         }
 
     /*
