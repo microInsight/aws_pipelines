@@ -93,7 +93,7 @@ workflow TAXONOMIC_STANDARDISATION {
 
     // Bracken
 
-    ch_profiles_for_bracken = groupProfiles(ch_input_profiles.bracken)
+    ch_profiles_for_bracken = groupProfiles(ch_input_profiles.bracken.collect())
 
     BRACKEN_COMBINEBRACKENOUTPUTS(ch_profiles_for_bracken)
 
