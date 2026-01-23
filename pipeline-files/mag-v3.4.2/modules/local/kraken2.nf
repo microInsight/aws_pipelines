@@ -33,6 +33,7 @@ process KRAKEN2 {
         --threads ${task.cpus} \
         --db ${db} \
         --report ${prefix}.kraken2_report.txt \
+        --memory-mapping \
         --use-names \
         --minimum-hit-groups 4 \
         --confidence 0.05 \
