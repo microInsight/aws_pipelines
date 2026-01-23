@@ -596,11 +596,11 @@ workflow MAG {
         if (!params.skip_quast) {
             ch_input_for_quast_bins = ch_input_for_postbinning
                 .groupTuple()
-                .unique()
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
                     [meta, new_bins]
                 }
+                .unique()
 
             QUAST_BINS(ch_input_for_quast_bins)
             ch_versions = ch_versions.mix(QUAST_BINS.out.versions)

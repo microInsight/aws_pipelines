@@ -297,14 +297,26 @@ workflow TAXONOMIC_PROFILING {
             file(params.tax_prof_template, checkIfExists: true),
         )
 
-        getSampleIdAndReports = { meta, file -> [ meta.subMap(['id', 'tool', 'classifier']), file ] }
-        report_hits = ch_plot_reports.collect()
-        ch_taxhits_input = report_hits
-            .groupTuple(size: 5)
-            .filter { meta, file ->
-                meta.tool in ["kraken2-bracken", "centrifuge-bracken", "taxpasta-kraken2", "taxpasta-centrifuge"]
+        // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
+        ch_in_1 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+            .map{ meta, file ->
+                [[meta.id], file]
             }
-            .map(getSampleIdAndReports)
+            .join(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
+                .map{ meta, file ->
+                    [[meta.id], file]
+                },
+                by: [0])
+        ch_in_3 = ch_in_1.join(ch_br_bracken_plot_input.kraken2
+            .map{ meta, file ->
+                [[meta.id], file]
+            },
+            by: [0])
+        ch_taxhits_input = ch_in_3.join(ch_br_bracken_plot_input.centrifuger
+            .map{ meta, file ->
+                [[meta.id], file]
+            },
+            by: [0])
 
         PLOT_TAXHITS(
             ch_taxhits_input,
