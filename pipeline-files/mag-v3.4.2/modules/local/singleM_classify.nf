@@ -24,7 +24,6 @@ process SINGLEM_CLASSIFY {
         -2 ${reads[1]} \\
         -p ${meta.id}_profile.tsv \\
         --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
-        --no-diamond-prefilter \\
         --otu-table ${meta.id}_otu_table.tsv \\
         --threads ${task.cpus} \\
         --metapackage ${metapackage}
