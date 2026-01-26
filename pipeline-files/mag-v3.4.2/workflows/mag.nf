@@ -60,6 +60,7 @@ include { CAT                                                   } from '../modul
 include { CAT_SUMMARY                                           } from '../modules/local/cat_summary'
 include { BIN_SUMMARY                                           } from '../modules/local/bin_summary'
 include { COMBINE_TSV as COMBINE_SUMMARY_TSV                    } from '../modules/local/combine_tsv'
+include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
 
 workflow MAG {
     take:
@@ -235,6 +236,9 @@ workflow MAG {
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
     }
+
+    SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
+    ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
     /*
     ================================================================================

@@ -185,6 +185,7 @@ workflow SHORTREAD_PREPROCESSING {
 
     emit:
     short_reads          = ch_short_reads
+    singlem_short_reads  = ch_short_reads_prepped
     short_reads_assembly = ch_short_reads_assembly
     versions             = ch_versions
     multiqc_files        = ch_multiqc_files

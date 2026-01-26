@@ -5,7 +5,8 @@
  */
 
 include { KRAKEN2 as KRAKEN2_TAXPROFILING                                        } from '../../modules/local/kraken2'
-include { BRACKEN_BRACKEN as BRACKEN                                             } from '../../modules/nf-core/bracken/bracken/main'
+include { BRACKEN_BRACKEN as BRACKEN_CENTRIFUGER                                 } from '../../modules/nf-core/bracken/bracken/main'
+include { BRACKEN_BRACKEN as BRACKEN_KRAKEN                                      } from '../../modules/nf-core/bracken/bracken/main'
 include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_KRAKEN2                   } from '../../modules/nf-core/taxpasta/standardise/main'
 include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_CENTRIFUGER               } from '../../modules/nf-core/taxpasta/standardise/main'
 include { CENTRIFUGER_CENTRIFUGER                                                } from '../../modules/local/centrifuger/centrifuger/main'
@@ -95,7 +96,7 @@ workflow TAXONOMIC_PROFILING {
                 [meta + [tool: 'kraken2'], report]
             }
         )
-        ch_k2_results = KRAKEN2_TAXPROFILING.out.report.collect()
+        ch_k2_results = KRAKEN2_TAXPROFILING.out.report
 
         TAXPASTA_STANDARDISE_KRAKEN2(
             ch_k2_results
@@ -113,14 +114,14 @@ workflow TAXONOMIC_PROFILING {
             [meta + [tool: 'kraken2'], report]
         }
 
-        BRACKEN(ch_bracken_input, k2_database, 'S')
-        ch_versions = ch_versions.mix(BRACKEN.out.versions)
+        BRACKEN_KRAKEN(ch_bracken_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN_KRAKEN.out.versions)
 
-        ch_bracken_results = BRACKEN.out.reports.map { meta, report ->
+        ch_bracken_results = BRACKEN_KRAKEN.out.reports.map { meta, report ->
             [meta + [tool: 'kraken2-bracken'], report]
         }
         ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
-        ch_plot_reports = ch_plot_reports.mix(BRACKEN.out.reports)
+        ch_plot_reports = ch_plot_reports.mix(BRACKEN_KRAKEN.out.reports)
 
         ch_bracken_plot_input = ch_bracken_results.branch { meta, report, tool ->
             krbracken: tool == 'kraken2-bracken'
@@ -133,12 +134,12 @@ workflow TAXONOMIC_PROFILING {
             file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
             file(params.tax_prof_template, checkIfExists: true),
         )
-        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN.out.reports)
     }
     else if (params.centrifuger_db && !params.kraken2_db) {
         // Centrifuger taxonomic profiling - no Kraken2
         CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
-        ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results.collect()
+        ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
         ch_centrifuger_results = ch_cent_results.mix(
             CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
                 [meta + [tool: 'centrifuger'], result]
@@ -157,7 +158,7 @@ workflow TAXONOMIC_PROFILING {
         ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
         TAXPASTA_STANDARDISE_CENTRIFUGER(
-            CENTRIFUGER_KREPORT.out.kreport.collect()
+            CENTRIFUGER_KREPORT.out.kreport
                 .map { meta, file ->
                     [meta + [tool: "centrifuge"], file]
                 },
@@ -185,7 +186,7 @@ workflow TAXONOMIC_PROFILING {
                 [meta + [tool: 'kraken2'], report]
             }
         )
-        ch_k2_results = KRAKEN2_TAXPROFILING.out.report.collect()
+        ch_k2_results = KRAKEN2_TAXPROFILING.out.report
 
         TAXPASTA_STANDARDISE_KRAKEN2(
             ch_k2_results
@@ -205,7 +206,7 @@ workflow TAXONOMIC_PROFILING {
 
         // Centrifuger taxonomic profiling
         CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
-        ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results.collect()
+        ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
         ch_centrifuger_results = ch_cent_results.mix(
             CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
                 [meta + [tool: 'centrifuger'], result]
@@ -228,22 +229,24 @@ workflow TAXONOMIC_PROFILING {
         ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
         // Bracken on Centrifuger Kraken-style outputs & Kraken2 outputs
-        ch_bracken_input = ch_k2_results.map { meta, report ->
+        ch_bracken_k2_input = ch_k2_results.map { meta, report ->
             [meta + [tool: 'kraken2'], report]
         }
-        ch_bracken_input = ch_bracken_input.mix(
-            CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
+        ch_bracken_cent_input = CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
                 [meta + [tool: 'centrifuge'], report]
             }
-        )
 
-        BRACKEN(ch_bracken_input, k2_database, 'S')
-        ch_versions = ch_versions.mix(BRACKEN.out.versions)
+        BRACKEN_KRAKEN(ch_bracken_k2_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN_KRAKEN.out.versions)
+        BRACKEN_CENTRIFUGER(ch_bracken_cent_input, k2_database, 'S')
+        ch_versions = ch_versions.mix(BRACKEN_CENTRIFUGER.out.versions)
 
-        ch_bracken_results = BRACKEN.out.reports.map { meta, report ->
-            def br_tool = meta.classifier == 'kraken2' ? 'kraken2-bracken' : 'centrifuge-bracken'
-            [meta + [tool: br_tool], report]
-        }
+        ch_br_out = BRACKEN_KRAKEN.out.reports.mix(BRACKEN_CENTRIFUGER.out.reports)
+        ch_bracken_results = ch_br_out
+            .map { meta, report ->
+                def br_tool = meta.classifier == 'kraken2' ? 'kraken2-bracken' : 'centrifuge-bracken'
+                [meta + [tool: br_tool], report]
+            }
         ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
 
         ch_bracken_plot_input = ch_bracken_results.branch { meta, report ->
@@ -253,6 +256,8 @@ workflow TAXONOMIC_PROFILING {
 
         ch_plot_reports = ch_plot_reports.mix(ch_br_bracken_plot_input.kraken2)
         ch_plot_reports = ch_plot_reports.mix(ch_br_bracken_plot_input.centrifuger)
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN.out.reports)
+        ch_parsedreports = ch_parsedreports.mix(BRACKEN_CENTRIFUGER.out.reports)
 
         PLOT_KRAKEN2BRACKEN(
             ch_br_bracken_plot_input.kraken2,
@@ -261,7 +266,6 @@ workflow TAXONOMIC_PROFILING {
             file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
             file(params.tax_prof_template, checkIfExists: true),
         )
-        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
 
         PLOT_CENTRIFUGERBRACKEN(
             ch_br_bracken_plot_input.centrifuger,
@@ -270,7 +274,6 @@ workflow TAXONOMIC_PROFILING {
             file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
             file(params.tax_prof_template, checkIfExists: true),
         )
-        ch_parsedreports = ch_parsedreports.mix(BRACKEN.out.reports)
 
         TAXPASTA_STANDARDISE_CENTRIFUGER(
             CENTRIFUGER_KREPORT.out.kreport
@@ -298,7 +301,7 @@ workflow TAXONOMIC_PROFILING {
         )
 
         // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
-        ch_in_1 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+        ch_taxhits_input = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
             .map{ meta, file ->
                 [[meta.id], file]
             }
@@ -307,16 +310,16 @@ workflow TAXONOMIC_PROFILING {
                     [[meta.id], file]
                 },
                 by: [0])
-        ch_in_3 = ch_in_1.join(ch_br_bracken_plot_input.kraken2
-            .map{ meta, file ->
-                [[meta.id], file]
-            },
-            by: [0])
-        ch_taxhits_input = ch_in_3.join(ch_br_bracken_plot_input.centrifuger
-            .map{ meta, file ->
-                [[meta.id], file]
-            },
-            by: [0])
+            .join(BRACKEN_KRAKEN.out.reports
+                .map{ meta, file ->
+                    [[meta.id], file]
+                },
+                by: [0])
+            .join(BRACKEN_CENTRIFUGER.out.reports
+                .map{ meta, file ->
+                    [[meta.id], file]
+                },
+                by: [0])
 
         PLOT_TAXHITS(
             ch_taxhits_input,
@@ -325,10 +328,14 @@ workflow TAXONOMIC_PROFILING {
             file(params.tax_prof_template, checkIfExists: true),
         )
     }
-    ch_profiles = ch_taxa_profiles.collect()
+
     // Combine profiles per database
-    // Join together for Krona visualisation
-    KRAKENTOOLS_KREPORT2KRONA(BRACKEN.out.txt.collect())
+    ch_profiles = ch_taxa_profiles.collect()
+
+    // Join Bracken outputs together for Krona visualisation
+    krona_input = BRACKEN_KRAKEN.out.txt.mix(BRACKEN_CENTRIFUGER.out.txt)
+
+    KRAKENTOOLS_KREPORT2KRONA(krona_input)
 
     KRONA_KTIMPORTTAXONOMY(
         KRAKENTOOLS_KREPORT2KRONA.out.txt,

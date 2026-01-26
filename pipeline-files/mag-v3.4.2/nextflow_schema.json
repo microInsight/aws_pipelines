@@ -620,6 +620,13 @@
                     "type": "boolean",
                     "description": "Only return official taxonomic ranks (Kingdom, Phylum, etc.) when running CAT."
                 },
+                "singlem_metapkg": {
+                    "type": "string",
+                    "description": "Metapackage for singleM taxonomic profiler. Must a path to a directory with required files.",
+                    "help_text": "Directory folder should be a SingleM metapackage ending in .smpkg located in AWS S3 bucket.",
+                    "format": "path",
+                    "exists": true
+                },
                 "skip_gtdbtk": {
                     "type": "boolean",
                     "description": "Skip the running of GTDB, as well as the automatic download of the database"
