@@ -61,6 +61,7 @@ include { CAT_SUMMARY                                           } from '../modul
 include { BIN_SUMMARY                                           } from '../modules/local/bin_summary'
 include { COMBINE_TSV as COMBINE_SUMMARY_TSV                    } from '../modules/local/combine_tsv'
 include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
+include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
 
 workflow MAG {
     take:
@@ -237,8 +238,37 @@ workflow MAG {
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
     }
 
-    // SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
-    // ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+    SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
+    ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+
+    SINGLEM_CLASSIFY.out.singleM_profile
+        .map { meta, profile ->
+            [meta + [project: meta.id =~ /^([[:digit:]]{3}[[:alpha:]]{2,3})/], profile]
+        }
+        .map { meta, profile ->
+                [[meta.project], profile]
+        }
+        .set {
+            ch_singlem_profs_out
+        }
+    SINGLEM_CLASSIFY.out.singleM_otu
+        .map { meta, otu ->
+            [meta + [project: meta.id =~ /^([[:digit:]]{3}[[:alpha:]]{2,3})/], otu]
+        }
+        .map { meta, otus ->
+                [[meta.project], otus]
+        }
+        .set {
+            ch_singlem_otus_out
+        }
+    ch_singlem_outs = ch_singlem_profs_out
+        .join(ch_singlem_otus_out, by: [0])
+
+    SINGLEM_SUMMARISE(
+        ch_singlem_outs,
+        "genus"
+    )
+    ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
 
     /*
     ================================================================================

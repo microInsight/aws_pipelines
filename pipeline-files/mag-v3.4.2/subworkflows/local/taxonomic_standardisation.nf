@@ -53,27 +53,14 @@ workflow TAXONOMIC_STANDARDISATION {
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
-    // We replace kraken2-bracken to kraken2 replace to get the right output-format description (as it's Kraken style)
-    // Bracken to id append so to disambiguate when we have same databases for kraken2 step of bracken, with normal bracken
-
-    ch_input_for_taxpasta = ch_prepare_for_taxpasta.branch { _meta, profile ->
-        merge: profile.size() > 1
-        standardise: true
-    }
-
-    ch_input_for_taxpasta_merge = ch_input_for_taxpasta.merge.multiMap { meta, input_profiles ->
+    // Separate profile and tool so they stay together. Already defined correct tool with classifier in previous subworkflow
+    ch_input_for_taxpasta = ch_prepare_for_taxpasta.multiMap { meta, input_profiles ->
         profiles: [meta, input_profiles]
         tool: meta.tool
     }
 
-    ch_input_for_taxpasta_standardise = ch_input_for_taxpasta.standardise.multiMap { meta, input_profiles ->
-        profiles: [meta, input_profiles]
-        tool: meta.tool
-    }
-
-
-    TAXPASTA_MERGE(ch_input_for_taxpasta_merge.profiles, ch_input_for_taxpasta_merge.tool, 'tsv', ch_taxpasta_tax_dir)
-    TAXPASTA_STANDARDISE(ch_input_for_taxpasta_standardise.profiles, ch_input_for_taxpasta_standardise.tool, 'tsv', ch_taxpasta_tax_dir)
+    TAXPASTA_MERGE(ch_input_for_taxpasta.profiles, ch_input_for_taxpasta.tool, 'tsv', ch_taxpasta_tax_dir)
+    TAXPASTA_STANDARDISE(ch_input_for_taxpasta.profiles, ch_input_for_taxpasta.tool, 'tsv', ch_taxpasta_tax_dir)
     ch_versions = ch_versions.mix(TAXPASTA_MERGE.out.versions)
     ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE.out.versions)
 

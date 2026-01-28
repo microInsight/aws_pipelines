@@ -12,6 +12,7 @@ process SINGLEM_CLASSIFY {
 
     output:
     tuple val(meta), path("*.tsv"), emit: singleM_profile
+    tuple val(meta), path("*.csv"), emit: singleM_otu
     tuple val(meta), path(".html"), emit: singleM_krona
     path "versions.yml"           , emit: versions
 
@@ -24,7 +25,7 @@ process SINGLEM_CLASSIFY {
         -2 ${reads[1]} \\
         -p ${meta.id}_profile.tsv \\
         --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
-        --otu-table ${meta.id}_otu_table.tsv \\
+        --otu-table ${meta.id}_otu_table.csv \\
         --threads ${task.cpus} \\
         --metapackage ${metapackage}
 
