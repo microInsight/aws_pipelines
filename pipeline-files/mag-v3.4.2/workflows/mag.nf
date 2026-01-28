@@ -237,8 +237,8 @@ workflow MAG {
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
     }
 
-    SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
-    ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+    // SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
+    // ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
     /*
     ================================================================================

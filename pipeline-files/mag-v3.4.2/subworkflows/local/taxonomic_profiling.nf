@@ -301,26 +301,26 @@ workflow TAXONOMIC_PROFILING {
         )
 
         // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
-        ch_taxhits_input = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+        tax_k2 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
             .map{ meta, file ->
                 [[meta.id], file]
             }
-            .join(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
-                .map{ meta, file ->
-                    [[meta.id], file]
-                },
-                by: [0])
-            .join(BRACKEN_KRAKEN.out.reports
-                .map{ meta, file ->
-                    [[meta.id], file]
-                },
-                by: [0])
-            .join(BRACKEN_CENTRIFUGER.out.reports
-                .map{ meta, file ->
-                    [[meta.id], file]
-                },
-                by: [0])
-
+        tax_cent = TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
+            .map{ meta, file ->
+                [[meta.id], file]
+            }
+        br_k2 = BRACKEN_KRAKEN.out.reports
+            .map{ meta, file ->
+                [[meta.id], file]
+            }
+        br_cent = BRACKEN_CENTRIFUGER.out.reports
+            .map{ meta, file ->
+                [[meta.id], file]
+            }
+        ch_taxhits_input = tax_k2
+            | join(tax_cent, by:[0])
+            | join(br_k2, by: [0])
+            | join(br_cent, by: [0])
         PLOT_TAXHITS(
             ch_taxhits_input,
             file(params.tax_prof_gtdb_metadata, checkIfExists: true),
@@ -330,10 +330,13 @@ workflow TAXONOMIC_PROFILING {
     }
 
     // Combine profiles per database
-    ch_profiles = ch_taxa_profiles.collect()
+    ch_profiles = ch_taxa_profiles
+        | groupTuple()
 
     // Join Bracken outputs together for Krona visualisation
-    krona_input = BRACKEN_KRAKEN.out.txt.mix(BRACKEN_CENTRIFUGER.out.txt)
+    krona_input_k2 = BRACKEN_KRAKEN.out.txt.collect()
+    krona_input_cent = BRACKEN_CENTRIFUGER.out.txt.collect()
+    krona_input = krona_input_k2.mix(krona_input_cent)
 
     KRAKENTOOLS_KREPORT2KRONA(krona_input)
 
@@ -363,7 +366,7 @@ workflow TAXONOMIC_PROFILING {
 */
 def groupProfiles(ch_profiles, groupTupleOptions = [:]) {
     return ch_profiles
-        .map { meta, profile -> [meta.db_name, profile] }
+        .map { meta, profile -> [meta.id, profile] }
         .groupTuple(groupTupleOptions)
-        .map { db_name, profiles -> [[id: db_name], profiles] }
+        .map { id, profiles -> [[id: id], profiles] }
 }
