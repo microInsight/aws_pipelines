@@ -183,7 +183,7 @@ workflow TAXONOMIC_PROFILING {
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
             KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
-                [meta + [tool: 'kraken2'], report]
+                [meta + [classifier: "kraken2"] + [tool: 'kraken2'], report]
             }
         )
         ch_k2_results = KRAKEN2_TAXPROFILING.out.report
@@ -191,7 +191,7 @@ workflow TAXONOMIC_PROFILING {
         TAXPASTA_STANDARDISE_KRAKEN2(
             ch_k2_results
                 .map { meta, file ->
-                    [meta + [tool: "kraken2"], file]
+                    [meta + [classifier: "kraken2"] + [tool: "kraken2"], file]
                 },
             'kraken2',
             'tsv',
@@ -209,7 +209,7 @@ workflow TAXONOMIC_PROFILING {
         ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
         ch_centrifuger_results = ch_cent_results.mix(
             CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
-                [meta + [tool: 'centrifuger'], result]
+                [meta + [classifier: "centrifuger"] + [tool: 'centrifuger'], result]
             }
         )
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
@@ -218,7 +218,7 @@ workflow TAXONOMIC_PROFILING {
         ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
             CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
-                [meta + [tool: 'centrifuge'], report]
+                [meta + [classifier: "centrifuger"] + [tool: 'centrifuge'], report]
             }
         )
         ch_plot_reports = ch_plot_reports.mix(
@@ -303,19 +303,19 @@ workflow TAXONOMIC_PROFILING {
         // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
         tax_k2 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
             .map{ meta, file ->
-                [[meta.id], file]
+                [[meta.id], file.flatten()]
             }
         tax_cent = TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
             .map{ meta, file ->
-                [[meta.id], file]
+                [[meta.id], file.flatten()]
             }
         br_k2 = BRACKEN_KRAKEN.out.reports
             .map{ meta, file ->
-                [[meta.id], file]
+                [[meta.id], file.flatten()]
             }
         br_cent = BRACKEN_CENTRIFUGER.out.reports
             .map{ meta, file ->
-                [[meta.id], file]
+                [[meta.id], file.flatten()]
             }
         ch_taxhits_input = tax_k2
             | join(tax_cent, by:[0])
@@ -331,7 +331,7 @@ workflow TAXONOMIC_PROFILING {
 
     // Combine profiles per database
     ch_profiles = ch_taxa_profiles
-        | groupTuple()
+        | collect()
 
     // Join Bracken outputs together for Krona visualisation
     krona_input_k2 = BRACKEN_KRAKEN.out.txt.collect()

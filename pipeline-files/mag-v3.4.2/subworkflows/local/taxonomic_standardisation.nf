@@ -37,7 +37,6 @@ workflow TAXONOMIC_STANDARDISATION {
 
     // Taxpasta standardisation
     ch_prepare_for_taxpasta = profiles
-        .groupTuple()
         .map { meta, profile ->
             if (meta.tool =~ /(bracken)/){
                 [meta + [tool: "bracken"], profile]
@@ -48,6 +47,14 @@ workflow TAXONOMIC_STANDARDISATION {
             else {
                 [meta, profile]
             }
+        }
+        .groupTuple()
+        .map { meta, input_profiles ->
+            meta = meta + [
+                tool: meta.tool == 'kraken2-bracken' ? 'kraken2' : meta.tool,
+                id: meta.tool == 'kraken2-bracken' ? "${meta.classifier}-bracken" : "${meta.classifier}",
+            ]
+            [meta, input_profiles.flatten()]
         }
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
