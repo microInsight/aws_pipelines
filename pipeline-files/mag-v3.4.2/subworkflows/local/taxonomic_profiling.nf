@@ -315,7 +315,7 @@ workflow TAXONOMIC_PROFILING {
             }
         br_cent = BRACKEN_CENTRIFUGER.out.reports
             .map{ meta, file ->
-                [[meta.id], file()]
+                [[meta.id], file]
             }
         ch_taxhits_input = tax_k2
             .join(tax_cent, by:[0])
