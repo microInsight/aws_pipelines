@@ -14,7 +14,7 @@ process SINGLEM_CLASSIFY {
     tuple val(meta), path("${meta.id}_profile.tsv"), path("${meta.id}_otu_table.csv"), emit: singleM_output
     tuple val(meta), path("*.tsv"), emit: singleM_profile
     tuple val(meta), path("*.csv"), emit: singleM_otu
-    tuple val(meta), path(".html"), emit: singleM_krona
+    tuple val(meta), path("*.html"), emit: singleM_krona
     path "versions.yml"           , emit: versions
 
     script:

@@ -24,13 +24,14 @@ process TAXPASTA_MERGE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def taxonomy_option = taxonomy ? "--taxonomy ${taxonomy}" : ''
+    def tax_profiles = profiles.collect { files -> "${files}"}.join(' ')
     """
     taxpasta merge \\
         --profiler ${profiler} \\
         --output ${prefix}.${format} \\
         ${args} \\
         ${taxonomy_option} \\
-        ${profiles}
+        ${tax_profiles}
 
 
     cat <<-END_VERSIONS > versions.yml

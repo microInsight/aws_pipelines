@@ -38,6 +38,11 @@ workflow TAXONOMIC_STANDARDISATION {
     // Taxpasta standardisation
     ch_prepare_for_taxpasta = profiles
         .map { meta, profile ->
+            def projparse = /^(\d{3}[A-Z]{2,3})/
+            def matches = (meta.id =~ projparse)
+                [meta + [project: matches[0][1]], profile]
+        }
+        .map { meta, profile ->
             if (meta.tool =~ /(bracken)/){
                 [meta + [tool: "bracken"], profile]
             }
@@ -48,20 +53,24 @@ workflow TAXONOMIC_STANDARDISATION {
                 [meta, profile]
             }
         }
-        .groupTuple()
-        .map { meta, input_profiles ->
-            meta = meta + [
-                tool: meta.tool == 'kraken2-bracken' ? 'kraken2' : meta.tool,
-                id: meta.tool == 'kraken2-bracken' ? "${meta.classifier}-bracken" : "${meta.classifier}",
-            ]
-            [meta, input_profiles.flatten()]
+        .map { meta, files ->
+            [meta.subMap(['project', 'tool']), files]
         }
+        .branch { meta, _file ->
+            kraken2: meta.tool == "kraken2"
+            bracken: meta.tool == "bracken"
+            centrifuge: meta.tool == "centrifuge"
+        }
+
+    ch_prep = ch_prepare_for_taxpasta.kraken2.groupTuple()
+        .mix(ch_prepare_for_taxpasta.bracken.groupTuple())
+        .mix(ch_prepare_for_taxpasta.centrifuge.groupTuple())
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
     // Separate profile and tool so they stay together. Already defined correct tool with classifier in previous subworkflow
-    ch_input_for_taxpasta = ch_prepare_for_taxpasta.multiMap { meta, input_profiles ->
+    ch_input_for_taxpasta = ch_prep.multiMap { meta, input_profiles ->
         profiles: [meta, input_profiles]
         tool: meta.tool
     }

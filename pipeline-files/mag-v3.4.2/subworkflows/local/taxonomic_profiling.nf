@@ -318,9 +318,11 @@ workflow TAXONOMIC_PROFILING {
                 [[meta.id], file.flatten()]
             }
         ch_taxhits_input = tax_k2
-            | join(tax_cent, by:[0])
-            | join(br_k2, by: [0])
-            | join(br_cent, by: [0])
+            .join(tax_cent, by:[0])
+            .join(br_k2, by: [0])
+            .join(br_cent, by: [0])
+            .transpose()
+
         PLOT_TAXHITS(
             ch_taxhits_input,
             file(params.tax_prof_gtdb_metadata, checkIfExists: true),
@@ -328,10 +330,6 @@ workflow TAXONOMIC_PROFILING {
             file(params.tax_prof_template, checkIfExists: true),
         )
     }
-
-    // Combine profiles per database
-    ch_profiles = ch_taxa_profiles
-        | collect()
 
     // Join Bracken outputs together for Krona visualisation
     krona_input_k2 = BRACKEN_KRAKEN.out.txt.collect()
@@ -347,7 +345,7 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
 
     emit:
-    profiles      = ch_profiles
+    profiles      = ch_taxa_profiles
     ch_taxreports = ch_parsedreports
     ch_kreports   = ch_plot_reports
     ch_multiqc    = ch_multiqc_files
