@@ -23,9 +23,7 @@ process SINGLEM_SUMMARISE {
         --input-taxonomic-profile ${singlem_profile} \\
         --output-species-by-site-relative-abundance ${meta.id}_${taxonomic_level}_by_site.csv\\
         --output-species-by-site-level ${taxonomic_level} \\
-        --output-taxonomic-profile-with-extras ${meta.id}_profile_with_extras.tsv
-
-    singlem summarise \\
+        --output-taxonomic-profile-with-extras ${meta.id}_profile_with_extras.tsv \\
         --input-otu-table ${singlem_otu_tables} \\
         --output-otu-table ${meta.project}_combined_otu_table.csv
 

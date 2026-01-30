@@ -44,6 +44,8 @@ include { PYRODIGAL                                             } from '../modul
 include { PROKKA                                                } from '../modules/nf-core/prokka/main'
 include { MMSEQS_DATABASES                                      } from '../modules/nf-core/mmseqs/databases/main'
 include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
+include { UNTAR                                                 } from '../modules/nf-core/untar/main'
+include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
 
 //
 // MODULE: Local to the pipeline
@@ -241,31 +243,8 @@ workflow MAG {
     SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
     ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
-    SINGLEM_CLASSIFY.out.singleM_profile
-        .map { meta, profile ->
-            [meta + [project: meta.id =~ /^([[:digit:]]{3}[[:alpha:]]{2,3})/], profile]
-        }
-        .map { meta, profile ->
-                [[meta.project], profile]
-        }
-        .set {
-            ch_singlem_profs_out
-        }
-    SINGLEM_CLASSIFY.out.singleM_otu
-        .map { meta, otu ->
-            [meta + [project: meta.id =~ /^([[:digit:]]{3}[[:alpha:]]{2,3})/], otu]
-        }
-        .map { meta, otus ->
-                [[meta.project], otus]
-        }
-        .set {
-            ch_singlem_otus_out
-        }
-    ch_singlem_outs = ch_singlem_profs_out
-        .join(ch_singlem_otus_out, by: [0])
-
     SINGLEM_SUMMARISE(
-        ch_singlem_outs,
+        SINGLEM_CLASSIFY.out.singleM_output,
         "genus"
     )
     ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
@@ -739,6 +718,44 @@ workflow MAG {
                 [],
             )
             ch_versions = ch_versions.mix(PROKKA.out.versions.first())
+        }
+
+        /*
+         * Bakta annotation
+        */
+        if (!params.skip_bakta) {
+            ch_bakta_db = file(params.annotation_bakta_db, checkIfExists: true)
+        // BAKTA prepare download
+            if (ch_bakta_db.endsWith( ".tar.xz" )) {
+                Channel.value(ch_bakta_db)
+                .map {
+                    bakta_db -> [
+                        ['id' : 'bakta_full_database'],
+                        bakta_db
+                        ]
+                    }
+                    .set { archive }
+
+                UNTAR(archive)
+            }
+            else {
+                ch_bakta_db = Channel.fromPath(params.annotation_bakta_db, checkIfExists: true)
+                    .first()
+            }
+
+            ch_bins_for_bakta = ch_input_for_postbinning
+                .transpose()
+                .map { meta, bin ->
+                    def meta_new = meta + [id: bin.getBaseName()]
+                    [meta_new, bin]
+                }
+                .filter { meta, _bin ->
+                    meta.domain != "eukarya"
+                }
+
+            BAKTA_BAKTA(ch_bins_for_bakta, ch_bakta_db, [], [])
+            ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
+            ch_multiqc_files = BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([])
         }
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
