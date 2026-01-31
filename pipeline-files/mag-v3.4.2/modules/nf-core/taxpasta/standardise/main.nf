@@ -9,7 +9,6 @@ process TAXPASTA_STANDARDISE {
 
     input:
     tuple val(meta), path(profile)
-    val profiler
     val format
     path taxonomy
 
@@ -26,7 +25,7 @@ process TAXPASTA_STANDARDISE {
     def taxonomy_option = taxonomy ? "--taxonomy ${taxonomy}" : ''
     """
     taxpasta standardise \\
-        --profiler ${profiler} \\
+        --profiler ${meta.tool} \\
         --output ${prefix}.${format} \\
         ${args} \\
         ${taxonomy_option} \\

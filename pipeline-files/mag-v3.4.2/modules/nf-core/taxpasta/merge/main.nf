@@ -9,7 +9,6 @@ process TAXPASTA_MERGE {
 
     input:
     tuple val(meta), path(profiles)
-    val profiler
     val format
     path taxonomy
 
@@ -23,11 +22,11 @@ process TAXPASTA_MERGE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def taxonomy_option = taxonomy ? "--taxonomy ${taxonomy}" : ''
+    def taxonomy_option = taxonomy ? "--taxonomy ${taxonomy}" : '' 
     def tax_profiles = profiles.collect { files -> "${files}"}.join(' ')
     """
     taxpasta merge \\
-        --profiler ${profiler} \\
+        --profiler ${meta.tool} \\
         --output ${prefix}.${format} \\
         ${args} \\
         ${taxonomy_option} \\

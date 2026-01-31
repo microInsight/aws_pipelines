@@ -62,21 +62,15 @@ workflow TAXONOMIC_STANDARDISATION {
             centrifuge: meta.tool == "centrifuge"
         }
 
-    ch_prep = ch_prepare_for_taxpasta.kraken2.groupTuple()
+    ch_input_for_taxpasta = ch_prepare_for_taxpasta.kraken2.groupTuple()
         .mix(ch_prepare_for_taxpasta.bracken.groupTuple())
         .mix(ch_prepare_for_taxpasta.centrifuge.groupTuple())
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
-    // Separate profile and tool so they stay together. Already defined correct tool with classifier in previous subworkflow
-    ch_input_for_taxpasta = ch_prep.multiMap { meta, input_profiles ->
-        profiles: [meta, input_profiles]
-        tool: meta.tool
-    }
-
-    TAXPASTA_MERGE(ch_input_for_taxpasta.profiles, ch_input_for_taxpasta.tool, 'tsv', ch_taxpasta_tax_dir)
-    TAXPASTA_STANDARDISE(ch_input_for_taxpasta.profiles, ch_input_for_taxpasta.tool, 'tsv', ch_taxpasta_tax_dir)
+    TAXPASTA_MERGE(ch_input_for_taxpasta, 'tsv', ch_taxpasta_tax_dir)
+    TAXPASTA_STANDARDISE(ch_input_for_taxpasta,'tsv', ch_taxpasta_tax_dir)
     ch_versions = ch_versions.mix(TAXPASTA_MERGE.out.versions)
     ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE.out.versions)
 
@@ -115,7 +109,10 @@ workflow TAXONOMIC_STANDARDISATION {
     ch_versions = ch_versions.mix(KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER.out.versions)
 
     PLOT_CENTRIFUGER(
-        TAXPASTA_STANDARDISE.out.standardised_profile,
+        TAXPASTA_STANDARDISE.out.standardised_profile
+            .filter { meta, report ->
+                meta.tool == 'centrifuge'
+            },
         "Centrifuger, Taxpasta",
         Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
         file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
@@ -133,7 +130,10 @@ workflow TAXONOMIC_STANDARDISATION {
     )
 
     PLOT_KRAKEN2(
-        TAXPASTA_STANDARDISE.out.standardised_profile,
+        TAXPASTA_STANDARDISE.out.standardised_profile
+            .filter { meta, report ->
+                meta.tool == 'kraken2'
+            },
         "Kraken2, Taxpasta",
         Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
         file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),

@@ -103,7 +103,6 @@ workflow TAXONOMIC_PROFILING {
                 .map { meta, file ->
                     [meta + [tool: "kraken2"], file]
                 },
-            'kraken2',
             'tsv',
             ch_taxpasta_tax_dir
         )
@@ -125,10 +124,10 @@ workflow TAXONOMIC_PROFILING {
 
         ch_bracken_plot_input = ch_bracken_results.branch { meta, report, tool ->
             krbracken: tool == 'kraken2-bracken'
-        } | set { ch_krbrakcen_plot_input}
+        }. set { ch_krbracken_plot_input}
 
         PLOT_KRAKEN2BRACKEN(
-            ch_krbrakcen_plot_input.krbracken,
+            ch_krbracken_plot_input.krbracken,
             "Kraken2, Bracken",
             Channel.value(params.tax_prof_gtdb_metadata),
             file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
@@ -162,7 +161,6 @@ workflow TAXONOMIC_PROFILING {
                 .map { meta, file ->
                     [meta + [tool: "centrifuge"], file]
                 },
-            'centrifuge',
             'tsv',
             ch_taxpasta_tax_dir
         )
@@ -193,7 +191,6 @@ workflow TAXONOMIC_PROFILING {
                 .map { meta, file ->
                     [meta + [classifier: "kraken2"] + [tool: "kraken2"], file]
                 },
-            'kraken2',
             'tsv',
             ch_taxpasta_tax_dir
         )
@@ -280,7 +277,6 @@ workflow TAXONOMIC_PROFILING {
                 .map { meta, file ->
                     [meta + [tool: "centrifuge"], file]
                 },
-            'centrifuge',
             'tsv',
             ch_taxpasta_tax_dir
         )
@@ -288,7 +284,7 @@ workflow TAXONOMIC_PROFILING {
         ch_plot_reports = ch_plot_reports
             .mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
                 .map { meta, report ->
-                    [meta + [tool: "taxpasta-centrifuge"], report]
+                    [meta + [tool: "taxpasta-centrifuger"], report]
                 }
             )
 
@@ -303,25 +299,27 @@ workflow TAXONOMIC_PROFILING {
         // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
         tax_k2 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
             .map{ meta, file ->
-                [[meta.id], file]
+                [meta, file]
             }
         tax_cent = TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile
             .map{ meta, file ->
-                [[meta.id], file]
+                [meta, file]
             }
         br_k2 = BRACKEN_KRAKEN.out.reports
             .map{ meta, file ->
-                [[meta.id], file]
+                [meta, file]
             }
         br_cent = BRACKEN_CENTRIFUGER.out.reports
             .map{ meta, file ->
-                [[meta.id], file]
+                [meta, file]
             }
         ch_taxhits_input = tax_k2
             .join(tax_cent, by:[0])
             .join(br_k2, by: [0])
             .join(br_cent, by: [0])
-
+            .map { key, meta_1, prof_1, meta_2, prof_2, meta_3, prof_3, meta_4, prof_4 ->
+                [meta_1, file(prof_1), file(prof_2), file(prof_3), file(prof_4)]
+            }
         PLOT_TAXHITS(
             ch_taxhits_input,
             file(params.tax_prof_gtdb_metadata, checkIfExists: true),
