@@ -54,7 +54,7 @@ workflow TAXONOMIC_STANDARDISATION {
             }
         }
         .map { meta, files ->
-            [meta.subMap(['project', 'tool']), files]
+            [meta.subMap(['project', 'id', 'tool']), files]
         }
         .branch { meta, _file ->
             kraken2: meta.tool == "kraken2"
@@ -69,10 +69,19 @@ workflow TAXONOMIC_STANDARDISATION {
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? file(params.taxpasta_taxonomy_dir, checkIfExists: true) : []
 
-    TAXPASTA_MERGE(ch_input_for_taxpasta, 'tsv', ch_taxpasta_tax_dir)
-    TAXPASTA_STANDARDISE(ch_input_for_taxpasta,'tsv', ch_taxpasta_tax_dir)
+    ch_taxpasta_in = ch_input_for_taxpasta
+        .multiMap { meta, _profiles ->
+            taxa_profiles: [meta, profiles]
+            tool: meta.tool
+        }
+
+    // TODO: Fix channel input so that all profiles with more than 1 sample get merged - right now only Bracken seems to work properly
+    TAXPASTA_MERGE(ch_prepare_for_taxpasta.bracken, 'tsv', ch_taxpasta_tax_dir)
     ch_versions = ch_versions.mix(TAXPASTA_MERGE.out.versions)
+
+    TAXPASTA_STANDARDISE(ch_taxpasta_in.taxa_profiles,'tsv', ch_taxpasta_tax_dir)
     ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE.out.versions)
+
 
     /*
         Split profile results based on tool they come from

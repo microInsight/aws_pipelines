@@ -328,9 +328,11 @@ workflow TAXONOMIC_PROFILING {
         )
     }
 
+    ch_taxa_profiles.groupTuple()
+        .set { ch_output_profiles}
     // Join Bracken outputs together for Krona visualisation
-    krona_input_k2 = BRACKEN_KRAKEN.out.txt.collect()
-    krona_input_cent = BRACKEN_CENTRIFUGER.out.txt.collect()
+    krona_input_k2 = BRACKEN_KRAKEN.out.txt
+    krona_input_cent = BRACKEN_CENTRIFUGER.out.txt
     krona_input = krona_input_k2.mix(krona_input_cent)
 
     KRAKENTOOLS_KREPORT2KRONA(krona_input)
@@ -342,7 +344,7 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
 
     emit:
-    profiles      = ch_taxa_profiles
+    profiles      = ch_output_profiles
     ch_taxreports = ch_parsedreports
     ch_kreports   = ch_plot_reports
     ch_multiqc    = ch_multiqc_files
