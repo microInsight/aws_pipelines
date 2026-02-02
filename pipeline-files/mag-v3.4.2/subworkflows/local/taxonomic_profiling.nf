@@ -113,6 +113,17 @@ workflow TAXONOMIC_PROFILING {
             [meta + [tool: 'kraken2'], report]
         }
 
+        PLOT_KRAKEN2(
+        TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+            .filter { meta, report ->
+                meta.tool == 'kraken2'
+            },
+        "Kraken2, Taxpasta",
+        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
+
         BRACKEN_KRAKEN(ch_bracken_input, k2_database, 'S')
         ch_versions = ch_versions.mix(BRACKEN_KRAKEN.out.versions)
 
@@ -201,6 +212,17 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
 
+        PLOT_KRAKEN2(
+        TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+            .filter { meta, _report ->
+                meta.tool == 'kraken2'
+            },
+        "Kraken2, Taxpasta",
+        Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+        file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+        file(params.tax_prof_template, checkIfExists: true)
+        )
+
         // Centrifuger taxonomic profiling
         CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
         ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
@@ -246,7 +268,7 @@ workflow TAXONOMIC_PROFILING {
             }
         ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
 
-        ch_bracken_plot_input = ch_bracken_results.branch { meta, report ->
+        ch_bracken_plot_input = ch_bracken_results.branch { meta, _report ->
             kraken2: meta.tool == 'kraken2-bracken'
             centrifuger: meta.tool == 'centrifuge-bracken'
         } | set { ch_br_bracken_plot_input }
@@ -317,7 +339,7 @@ workflow TAXONOMIC_PROFILING {
             .join(tax_cent, by:[0])
             .join(br_k2, by: [0])
             .join(br_cent, by: [0])
-            .map { key, meta_1, prof_1, meta_2, prof_2, meta_3, prof_3, meta_4, prof_4 ->
+            .map { _key, meta_1, prof_1, _meta_2, prof_2, _meta_3, prof_3, _meta_4, prof_4 ->
                 [meta_1, file(prof_1), file(prof_2), file(prof_3), file(prof_4)]
             }
         PLOT_TAXHITS(
@@ -328,8 +350,6 @@ workflow TAXONOMIC_PROFILING {
         )
     }
 
-    ch_taxa_profiles.groupTuple()
-        .set { ch_output_profiles}
     // Join Bracken outputs together for Krona visualisation
     krona_input_k2 = BRACKEN_KRAKEN.out.txt
     krona_input_cent = BRACKEN_CENTRIFUGER.out.txt
@@ -344,7 +364,7 @@ workflow TAXONOMIC_PROFILING {
     ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
 
     emit:
-    profiles      = ch_output_profiles
+    profiles      = ch_taxa_profiles
     ch_taxreports = ch_parsedreports
     ch_kreports   = ch_plot_reports
     ch_multiqc    = ch_multiqc_files

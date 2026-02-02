@@ -228,19 +228,14 @@ workflow MAG {
         TAXONOMIC_PROFILING(
             ch_short_reads
         )
-
-        TAXONOMIC_STANDARDISATION(
-            TAXONOMIC_PROFILING.out.profiles
-        )
-
         ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
-        ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
-
         ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
-        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
     }
 
-    SINGLEM_CLASSIFY(SHORTREAD_PREPROCESSING.out.singlem_short_reads, file(params.singlem_metapkg))
+    SINGLEM_CLASSIFY(
+        SHORTREAD_PREPROCESSING.out.singlem_short_reads,
+        file(params.singlem_metapkg)
+    )
     ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
     SINGLEM_SUMMARISE(

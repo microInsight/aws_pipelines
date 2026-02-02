@@ -40,21 +40,21 @@ workflow TAXONOMIC_STANDARDISATION {
         .map { meta, profile ->
             def projparse = /^(\d{3}[A-Z]{2,3})/
             def matches = (meta.id =~ projparse)
-                [meta + [project: matches[0][1]], profile]
+                [meta + [project: matches[0][1]], file(profile)]
         }
         .map { meta, profile ->
             if (meta.tool =~ /(bracken)/){
-                [meta + [tool: "bracken"], profile]
+                [meta + [tool: "bracken"], file(profile)]
             }
             else if(meta.tool == /centrifuger/) {
-                [meta + [tool: "centrifuge"], profile]
+                [meta + [tool: "centrifuge"], file(profile)]
             }
             else {
-                [meta, profile]
+                [meta, file(profile)]
             }
         }
         .map { meta, files ->
-            [meta.subMap(['project', 'id', 'tool']), files]
+            [meta.subMap(['project', 'id', 'tool']), file(files)]
         }
         .branch { meta, _file ->
             kraken2: meta.tool == "kraken2"
@@ -71,7 +71,7 @@ workflow TAXONOMIC_STANDARDISATION {
 
     ch_taxpasta_in = ch_input_for_taxpasta
         .multiMap { meta, _profiles ->
-            taxa_profiles: [meta, profiles]
+            taxa_profiles: [meta, file(profiles)]
             tool: meta.tool
         }
 
@@ -111,7 +111,10 @@ workflow TAXONOMIC_STANDARDISATION {
     ch_profiles_for_centrifuger = groupProfiles(
         ch_input_profiles.centrifuge,
         [sort: { -it.size() }],
-    )
+        )
+        .map { meta, files ->
+            [meta, file(files)]
+        }
 
     KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER(ch_profiles_for_centrifuger)
     ch_multiqc_files = ch_multiqc_files.mix(KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER.out.txt)
@@ -136,11 +139,14 @@ workflow TAXONOMIC_STANDARDISATION {
     ch_profiles_for_kraken2 = groupProfiles(
         ch_input_profiles.kraken2,
         [sort: { -it.size() }],
-    )
+        )
+        .map { meta, files ->
+            [meta, file(files)]
+        }
 
     PLOT_KRAKEN2(
         TAXPASTA_STANDARDISE.out.standardised_profile
-            .filter { meta, report ->
+            .filter { meta, _report ->
                 meta.tool == 'kraken2'
             },
         "Kraken2, Taxpasta",
