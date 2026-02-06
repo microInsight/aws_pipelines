@@ -9,6 +9,7 @@ process UNTAR {
 
     input:
     tuple val(meta), path(archive)
+    val suffix
 
     output:
     tuple val(meta), path("$prefix"), emit: untar
@@ -32,14 +33,14 @@ process UNTAR {
             -C ${prefix} --strip-components 1 \\
             -xavf \\
             $args \\
-            $archive \\
+            $archive.$suffix \\
             $args2
     else
         tar \\
             -C ${prefix} \\
             -xavf \\
             $args \\
-            $archive \\
+            $archive.$suffix \\
             $args2
     fi
 

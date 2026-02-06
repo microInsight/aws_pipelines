@@ -289,7 +289,7 @@ workflow MAG {
                 }
                 .set { archive }
 
-            KRAKENDB_UNTAR(archive)
+            KRAKENDB_UNTAR(archive, "gz")
 
             k2_database = KRAKENDB_UNTAR.out.untar.map { it -> it[1] }
             ch_versions = ch_versions.mix(KRAKENDB_UNTAR.out.versions.first())
@@ -1078,7 +1078,7 @@ workflow MAG {
                     }
                     .set { archive }
 
-                UNTAR(archive)
+                UNTAR(archive, "xz")
 
                 ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
                 ch_versions = ch_versions.mix(UNTAR.out.versions.first())
