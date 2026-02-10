@@ -289,7 +289,7 @@ workflow MAG {
                 }
                 .set { archive }
 
-            KRAKENDB_UNTAR(archive, "gz")
+            KRAKENDB_UNTAR(archive)
 
             k2_database = KRAKENDB_UNTAR.out.untar.map { it -> it[1] }
             ch_versions = ch_versions.mix(KRAKENDB_UNTAR.out.versions.first())
@@ -299,7 +299,9 @@ workflow MAG {
         }
 
         // get Centrifuger database path
-        CENTRIFUGER_GET_DIR(Channel.of([[id: 'db'], file(params.centrifuger_db, checkIfExists: true)]))
+        if (params.centrifuger_db) {
+            CENTRIFUGER_GET_DIR(Channel.of([[id: 'db'], file(params.centrifuger_db, checkIfExists: true)]))
+        }
 
         // Note : Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
         // add conditional execution for each classifier in case only one provided
@@ -361,6 +363,15 @@ workflow MAG {
                 file(params.tax_prof_template, checkIfExists: true),
             )
             ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN.out.reports)
+
+            // Krona visualisation for Brakcen results
+            KRAKENTOOLS_KREPORT2KRONA(BRACKEN_KRAKEN.out.txt)
+
+            KRONA_KTIMPORTTAXONOMY(
+                KRAKENTOOLS_KREPORT2KRONA.out.txt,
+                file(params.krona_db, checkIfExists: true),
+            )
+            ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
         }
         else if (params.centrifuger_db && !params.kraken2_db) {
             // Centrifuger taxonomic profiling - no Kraken2
@@ -564,34 +575,34 @@ workflow MAG {
                 file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
                 file(params.tax_prof_template, checkIfExists: true),
             )
+
+            // Join Bracken outputs together for Krona visualisation
+            krona_input_k2 = BRACKEN_KRAKEN.out.txt
+            krona_input_cent = BRACKEN_CENTRIFUGER.out.txt
+            krona_input = krona_input_k2.mix(krona_input_cent)
+
+            KRAKENTOOLS_KREPORT2KRONA(krona_input)
+
+            KRONA_KTIMPORTTAXONOMY(
+                KRAKENTOOLS_KREPORT2KRONA.out.txt,
+                file(params.krona_db, checkIfExists: true),
+            )
+            ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
         }
 
-        // Join Bracken outputs together for Krona visualisation
-        krona_input_k2 = BRACKEN_KRAKEN.out.txt
-        krona_input_cent = BRACKEN_CENTRIFUGER.out.txt
-        krona_input = krona_input_k2.mix(krona_input_cent)
-
-        KRAKENTOOLS_KREPORT2KRONA(krona_input)
-
-        KRONA_KTIMPORTTAXONOMY(
-            KRAKENTOOLS_KREPORT2KRONA.out.txt,
-            file(params.krona_db, checkIfExists: true),
-        )
-        ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
-
-    }
-
-    SINGLEM_CLASSIFY(
+        SINGLEM_CLASSIFY(
         SHORTREAD_PREPROCESSING.out.singlem_short_reads,
         file(params.singlem_metapkg)
-    )
-    ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+        )
+        ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
-    SINGLEM_SUMMARISE(
-        SINGLEM_CLASSIFY.out.singleM_output,
-        "genus"
-    )
-    ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+        SINGLEM_SUMMARISE(
+            SINGLEM_CLASSIFY.out.singleM_output,
+            "genus"
+        )
+        ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+    }
+
 
     /*
     ================================================================================
@@ -1068,7 +1079,7 @@ workflow MAG {
         */
         if (!params.skip_bakta) {
             ch_bakta_db = file(params.annotation_bakta_db, checkIfExists: true)
-            if (ch_bakta_db.endsWith( ".tar.xz" )) {
+            if (ch_bakta_db.name.endsWith(".tar.xz")) {
                 Channel.value(ch_bakta_db)
                 .map {
                     bakta_db -> [
@@ -1078,7 +1089,7 @@ workflow MAG {
                     }
                     .set { archive }
 
-                UNTAR(archive, "xz")
+                UNTAR(archive)
 
                 ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
                 ch_versions = ch_versions.mix(UNTAR.out.versions.first())

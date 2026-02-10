@@ -34,6 +34,7 @@ process KRAKEN2 {
         --db ${db} \
         --report ${prefix}.kraken2_report.txt \
         --use-names \
+        --memory-mapping \
         --minimum-hit-groups 4 \
         --confidence 0.05 \
         --classified-out ${prefix}#_classified_reads.fq \
