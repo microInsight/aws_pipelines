@@ -510,6 +510,18 @@
                     "type": "boolean",
                     "description": "Skip creating a krona plot for taxonomic binning."
                 },
+                "skip_singleM": {
+                    "type": "boolean",
+                    "description": "Skip creating a singleM taxonomic profile."
+                },
+                "skip_kraken2": {
+                    "type": "boolean",
+                    "description": "Skip creating a kraken2 taxonomic profile."
+                },
+                "skip_centrifuger": {
+                    "type": "boolean",
+                    "description": "Skip creating a centrifuger taxonomic profile."
+                },
                 "k2_min_target_reads": {
                     "description": "Minimum number of reads assigned to a taxon to be reported in the kraken2 taxonomic profile.",
                     "type": "integer",

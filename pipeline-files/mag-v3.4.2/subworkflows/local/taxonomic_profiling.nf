@@ -88,7 +88,7 @@ workflow TAXONOMIC_PROFILING {
     // Note : Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
     // add conditional execution for each classifier in case only one provided
      // Kraken2 taxonomic profiling - no Centrifuger
-    if (params.kraken2_db && !params.centrifuger_db) {
+    if (params.skip_centrifuger && !params.skip_kraken2) {
         KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
@@ -146,7 +146,7 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_parsedreports = ch_parsedreports.mix(BRACKEN_KRAKEN.out.reports)
     }
-    else if (params.centrifuger_db && !params.kraken2_db) {
+    else if (params.skip_kraken2 && !params.skip_centrifuger) {
         // Centrifuger taxonomic profiling - no Kraken2
         CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
         ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
@@ -187,7 +187,6 @@ workflow TAXONOMIC_PROFILING {
         )
     }
     else {
-        // Regular or at least Expected case - both Kraken2 and Centrifuger provided
         KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(

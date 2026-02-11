@@ -306,7 +306,7 @@ workflow MAG {
         // Note : Kraken2 & Braken classifications - Bracken results summarized at species level (S) [may change in future or be parameterised]
         // add conditional execution for each classifier in case only one provided
          // Kraken2 taxonomic profiling - no Centrifuger
-        if (params.kraken2_db && !params.centrifuger_db) {
+        if (params.skip_centrifuger && !params.skip_kraken2) {
             KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
             ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
             ch_taxa_profiles = ch_taxa_profiles.mix(
@@ -351,12 +351,8 @@ workflow MAG {
             ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
             ch_plot_reports = ch_plot_reports.mix(BRACKEN_KRAKEN.out.reports)
 
-            ch_bracken_plot_input = ch_bracken_results.branch { meta, report, tool ->
-                krbracken: tool == 'kraken2-bracken'
-            }. set { ch_krbracken_plot_input}
-
             PLOT_KRAKEN2BRACKEN(
-                ch_krbracken_plot_input.krbracken,
+                ch_bracken_results,
                 "Kraken2, Bracken",
                 Channel.value(params.tax_prof_gtdb_metadata),
                 file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
@@ -373,7 +369,7 @@ workflow MAG {
             )
             ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
         }
-        else if (params.centrifuger_db && !params.kraken2_db) {
+        else if (params.skip_kraken2 && !params.skip_centrifuger) {
             // Centrifuger taxonomic profiling - no Kraken2
             CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
             ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
@@ -590,17 +586,20 @@ workflow MAG {
             ch_versions = ch_versions.mix(KRONA_KTIMPORTTAXONOMY.out.versions)
         }
 
-        SINGLEM_CLASSIFY(
-        SHORTREAD_PREPROCESSING.out.singlem_short_reads,
-        file(params.singlem_metapkg)
-        )
-        ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+        if (!params.skip_singleM) {
+            SINGLEM_CLASSIFY(
+            SHORTREAD_PREPROCESSING.out.singlem_short_reads,
+            file(params.singlem_metapkg)
+            )
+            ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
-        SINGLEM_SUMMARISE(
-            SINGLEM_CLASSIFY.out.singleM_output,
-            "genus"
-        )
-        ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+            SINGLEM_SUMMARISE(
+                SINGLEM_CLASSIFY.out.singleM_output,
+                "genus"
+            )
+            ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+        }
+
     }
 
 
