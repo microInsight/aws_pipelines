@@ -1086,7 +1086,7 @@ workflow MAG {
 
             }
             else {
-                ch_bakta_db = Channel.fromPath(params.annotation_bakta_db, checkIfExists: true, type: 'dir')
+                ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
                     .map { dir ->
                         [[id: 'bakta_full_database'], dir]
                     }
