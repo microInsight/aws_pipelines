@@ -284,7 +284,7 @@ workflow MAG {
                 .map { kraken2_db ->
                     [
                         ['id': 'kraken2_database'],
-                        kraken2_db,
+                        file(kraken2_db)
                     ]
                 }
                 .set { archive }
@@ -1078,24 +1078,19 @@ workflow MAG {
          * Bakta annotation
         */
         if (!params.skip_bakta) {
-            ch_bakta_db = file(params.annotation_bakta_db, checkIfExists: true)
-            if (ch_bakta_db.name.endsWith(".tar.xz")) {
-                Channel.value(ch_bakta_db)
-                .map {
-                    bakta_db -> [
-                        ['id' : 'bakta_full_database'],
-                        bakta_db
-                        ]
-                    }
-                    .set { archive }
-
-                UNTAR(archive)
+            if (params.annotation_bakta_db.endsWith(".tar.xz")) {
+                UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
 
                 ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
+
                 ch_versions = ch_versions.mix(UNTAR.out.versions.first())
+
             }
             else {
-                ch_bakta_db = Channel.fromPath(params.annotation_bakta_db, checkIfExists: true)
+                ch_bakta_db = Channel.fromPath(params.annotation_bakta_db, checkIfExists: true, type: 'dir')
+                    .map { dir ->
+                        [[id: 'bakta_full_database'], dir]
+                    }
                     .first()
             }
 
