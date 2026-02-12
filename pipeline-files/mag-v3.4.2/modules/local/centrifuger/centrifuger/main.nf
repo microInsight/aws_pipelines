@@ -21,13 +21,14 @@ process CENTRIFUGER_CENTRIFUGER {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def paired = "-1 ${reads[0]} -2 ${reads[1]}"
+    def input = params.single_end ? "-u ${reads[0]}" :  "-1 ${reads[0]} -2 ${reads[1]}"
+
     """
     db_name=`find -L ${db} -name "*.1.cfr" -not -name "._*"  | sed 's/\\.1.cfr\$//'`
 
     centrifuger \\
-        -x `find -L ${db} -name "*.1.cfr" -not -name "._*"  | sed 's/\\.1.cfr\$//'` \\
-        $paired \\
+        -x \$db_name \\
+        $input \\
         -t $task.cpus \\
         $args > ${prefix}.results.tsv
 

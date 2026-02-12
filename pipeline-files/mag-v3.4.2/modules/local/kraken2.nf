@@ -24,7 +24,7 @@ process KRAKEN2 {
     script:
     def args = task.ext.args ?: ""
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def filenames = "--paired \"${reads[0]}\" \"${reads[1]}\""
+    def filenames = params.single_end ? "\"${reads[0]}\"" :  "--paired \"${reads[0]}\" \"${reads[1]}\""
     prefix = task.ext.prefix ?: "${meta.id}"
 
     """

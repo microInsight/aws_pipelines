@@ -27,6 +27,16 @@ workflow SHORTREAD_PREPROCESSING {
     ch_versions = Channel.empty()
     ch_multiqc_files = Channel.empty()
 
+    if(params.single_end) {
+        ch_short_reads = ch_raw_short_reads
+            .branch {
+                single: it[0]['single_end']
+                paired: !it[0]['single_end']
+            }
+
+        ch_raw_short_reads = ch_short_reads.single
+    }
+
     FASTQC_RAW(
         ch_raw_short_reads
     )
