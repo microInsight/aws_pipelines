@@ -99,14 +99,11 @@ workflow TAXONOMIC_PROFILING {
             }
         )
         ch_k2_results = KRAKEN2_TAXPROFILING.out.report
-        ch_k2_standardise_input = ch_k2_results
-            .map { meta, file ->
-                [meta + [tool: "kraken2"], file]
-            }
-            .collect(flat: false)
 
         TAXPASTA_STANDARDISE_KRAKEN2(
-            ch_k2_standardise_input,
+            KRAKEN2_TAXPROFILING.out.report.map { meta, file ->
+                [meta + [tool: "kraken2"], file]
+            },
             'tsv',
             ch_taxpasta_tax_dir,
         )

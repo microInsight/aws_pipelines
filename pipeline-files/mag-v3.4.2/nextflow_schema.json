@@ -1035,6 +1035,262 @@
                     }
                 }
             },
+        "screening_type_activation": {
+            "title": "Screening type activation",
+            "type": "object",
+            "description": "Activate or skip BGC detection workflow.",
+            "default": "",
+            "properties": {
+                "run_bgc_screening": {
+                    "type": "boolean",
+                    "description": "Activate biosynthetic gene cluster screening tools.",
+                    "fa_icon": "fas fa-check-circle"
+                }
+            },
+            "fa_icon": "fa fa-list"
+        },
+        "bgc_general_options": {
+            "title": "BGC: general options",
+            "type": "object",
+            "description": "These parameters influence general BGC settings like minimum input sequence length.",
+            "default": "",
+            "fa_icon": "fas fa-angle-double-right",
+            "properties": {
+                "bgc_mincontiglength": {
+                    "type": "integer",
+                    "default": 3000,
+                    "fa_icon": "fas fa-ruler-horizontal",
+                    "description": "Specify the minimum length of contigs that go into BGC screening.",
+                    "help_text": "Specify the minimum length of contigs that go into BGC screening.\n\nIf BGC screening is turned on, nf-core/funcscan will generate for each input sample a second FASTA file of only contigs that are longer than the specified minimum length.\nThis is due to an (approximate) 'biological' minimum length that nucleotide sequences would need to have to code for a valid BGC (e.g. not on the edge of a contig), as well as to speeding up BGC screening sections of the pipeline by screening only meaningful contigs.\n\nNote this only affects BGCs. For ARG and AMPs no filtering is performed and all contigs are screened."
+                },
+                "bgc_savefilteredcontigs": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-save",
+                    "description": "Specify to save the length-filtered (unannotated) FASTAs used for BGC screening."
+                }
+            }
+        },
+        "bgc_antismash": {
+            "title": "BGC: antiSMASH",
+            "type": "object",
+            "description": "Biosynthetic gene cluster detection. More info: https://docs.antismash.secondarymetabolites.org",
+            "default": "",
+            "properties": {
+                "bgc_skip_antismash": {
+                    "type": "boolean",
+                    "description": "Skip antiSMASH during the BGC screening.",
+                    "fa_icon": "fas fa-ban"
+                },
+                "bgc_antismash_db": {
+                    "type": "string",
+                    "description": "Path to user-defined local antiSMASH database.",
+                    "fa_icon": "fas fa-database",
+                    "help_text": "It is recommend to pre-download the antiSMASH databases to your machine and pass the path of it to this parameter, as this can take a long time to download - particularly when running lots of pipeline runs.\n\nThe contents of the database directory should include directories such as `as-js/`, `clusterblast/`, `clustercompare/` etc. in the top level.\n\nSee the pipeline [documentation](https://nf-co.re/funcscan/usage#antismash-1) for details on how to download this."
+                },
+                "bgc_antismash_contigminlength": {
+                    "type": "integer",
+                    "default": 3000,
+                    "description": "Minimum length a contig must have to be screened with antiSMASH.",
+                    "fa_icon": "fas fa-align-center",
+                    "help_text": "This specifies the minimum length that a contig must have for the contig to be screened by antiSMASH.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\nThis will only apply to samples that are screened with antiSMASH (i.e., those samples that have not been removed by `--bgc_antismash_sampleminlength`).\n\nYou may wish to increase this value compared to that of `--bgc_antismash_sampleminlength`, in cases where you wish to screen higher-quality (i.e. longer) contigs, or speed up runs by not screening lower quality/less informative contigs.\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--minlength`"
+                },
+                "bgc_antismash_cbgeneral": {
+                    "type": "boolean",
+                    "description": "Turn on clusterblast comparison against database of antiSMASH-predicted clusters.",
+                    "help_text": "Compare identified clusters against a database of antiSMASH-predicted clusters using the clusterblast algorithm.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--cb-general`",
+                    "fa_icon": "fab fa-affiliatetheme"
+                },
+                "bgc_antismash_cbknownclusters": {
+                    "type": "boolean",
+                    "description": "Turn on clusterblast comparison against known gene clusters from the MIBiG database.",
+                    "fa_icon": "fas fa-puzzle-piece",
+                    "help_text": "This will turn on comparing identified clusters against known gene clusters from the MIBiG database using the clusterblast algorithm.\n\n[MIBiG](https://mibig.secondarymetabolites.org/) is a curated database of experimentally characterised gene clusters and with rich associated metadata.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--cb-knownclusters`"
+                },
+                "bgc_antismash_cbsubclusters": {
+                    "type": "boolean",
+                    "description": "Turn on clusterblast comparison against known subclusters responsible for synthesising precursors.",
+                    "fa_icon": "fas fa-adjust",
+                    "help_text": "Turn on additional screening for operons involved in the biosynthesis of early secondary metabolites components using the clusterblast algorithm.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--cb-subclusters`"
+                },
+                "bgc_antismash_ccmibig": {
+                    "type": "boolean",
+                    "description": "Turn on ClusterCompare comparison against known gene clusters from the MIBiG database.",
+                    "fa_icon": "fab fa-affiliatetheme",
+                    "help_text": "Turn on comparison of detected genes against the MIBiG database using the ClusterCompare algorithm - an alternative to clusterblast.\n\nNote there will not be a dedicated ClusterCompare output in the antiSMASH results directory, but is present in the HTML.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--cc-mibig`"
+                },
+                "bgc_antismash_smcogtrees": {
+                    "type": "boolean",
+                    "description": "Generate phylogenetic trees of secondary metabolite group orthologs.",
+                    "fa_icon": "fas fa-tree",
+                    "help_text": "Turning this on will activate the generation of additional functional and phylogenetic analysis of genes, via comparison against databases of protein orthologs.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--cb-smcog-trees`"
+                },
+                "bgc_antismash_hmmdetectionstrictness": {
+                    "type": "string",
+                    "default": "relaxed",
+                    "description": "Defines which level of strictness to use for HMM-based cluster detection.",
+                    "help_text": "Levels of strictness correspond to screening different groups of 'how well-defined' clusters are. For example, `loose` will include screening for 'poorly defined' clusters (e.g. saccharides), `relaxed` for partially present clusters (e.g. certain types of NRPS), whereas `strict` will screen for well-defined clusters such as Ketosynthases.\n\nYou can see the rules for the levels of strictness [here](https://github.com/antismash/antismash/tree/master/antismash/detection/hmm_detection/cluster_rules).\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--hmmdetection-strictness`",
+                    "fa_icon": "fas fa-search",
+                    "enum": ["relaxed", "strict", "loose"]
+                },
+                "bgc_antismash_pfam2go": {
+                    "type": "boolean",
+                    "description": "Run Pfam to Gene Ontology mapping module.",
+                    "help_text": "This maps the proteins to Pfam database to annotate BGC modules with functional information based on the protein families they contain. For more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--pfam2go`",
+                    "fa_icon": "fas fa-search"
+                },
+                "bgc_antismash_rre": {
+                    "type": "boolean",
+                    "description": "Run RREFinder precision mode on all RiPP gene clusters.",
+                    "help_text": "This enables the prediction of regulatory elements on the BGC that help in the control of protein expression. For more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--rre`",
+                    "fa_icon": "fas fa-search"
+                },
+                "bgc_antismash_taxon": {
+                    "type": "string",
+                    "default": "bacteria",
+                    "description": "Specify which taxonomic classification of input sequence to use.",
+                    "help_text": "This specifies which set of secondary metabolites to screen for, based on the taxon type the secondary metabolites are from.\n\nThis will run different pipelines depending on whether the input sequences are from bacteria or fungi.\n\nFor more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--taxon`",
+                    "fa_icon": "fas fa-bacteria",
+                    "enum": ["bacteria", "fungi"]
+                },
+                "bgc_antismash_tfbs": {
+                    "type": "boolean",
+                    "description": "Run TFBS finder on all gene clusters.",
+                    "help_text": "This enables the prediction of transcription factor binding sites which control the gene expression. For more information see the antiSMASH [documentation](https://docs.antismash.secondarymetabolites.org/).\n\n> Modifies tool parameter(s):\n> - antiSMASH: `--tfbs`",
+                    "fa_icon": "fas fa-search"
+                }
+            },
+            "fa_icon": "fas fa-angle-double-right"
+        },
+        "bgc_deepbgc": {
+            "title": "BGC: DeepBGC",
+            "type": "object",
+            "description": "A deep learning genome-mining strategy for biosynthetic gene cluster prediction. More info: https://github.com/Merck/deepbgc/tree/master/deepbgc",
+            "default": "",
+            "properties": {
+                "bgc_skip_deepbgc": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-ban",
+                    "description": "Skip DeepBGC during the BGC screening."
+                },
+                "bgc_deepbgc_db": {
+                    "type": "string",
+                    "fa_icon": "fas fa-database",
+                    "description": "Path to local DeepBGC database folder.",
+                    "help_text": "The contents of the database directory should include directories such as `common`, `0.1.0` in the top level.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: environment variable `DEEPBGC_DOWNLOADS_DIR`"
+                },
+                "bgc_deepbgc_score": {
+                    "type": "number",
+                    "default": 0.5,
+                    "description": "Average protein-wise DeepBGC score threshold for extracting BGC regions from Pfam sequences.",
+                    "fa_icon": "fas fa-list-ol",
+                    "help_text": "The DeepBGC score threshold for extracting BGC regions from Pfam sequences based on average protein-wise value.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--score`"
+                },
+                "bgc_deepbgc_prodigalsinglemode": {
+                    "type": "boolean",
+                    "description": "Run DeepBGC's internal Prodigal step in `single` mode to restrict detecting genes to long contigs",
+                    "help_text": "By default DeepBGC's Prodigal runs in 'single genome' mode that requires sequence lengths to be equal or longer than 20000 characters.\n\nHowever, more fragmented reads from MAGs often result in contigs shorter than this. Therefore, nf-core/funcscan will run with the `meta` mode by default, but providing this parameter allows to override this and run in single genome mode again.\n\nFor more information check the Prodigal [documentation](https://github.com/hyattpd/prodigal/wiki).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--prodigal-meta-mode`",
+                    "fa_icon": "fas fa-compress-alt"
+                },
+                "bgc_deepbgc_mergemaxproteingap": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Merge detected BGCs within given number of proteins.",
+                    "fa_icon": "fas fa-angle-double-up",
+                    "help_text": "Merge detected BGCs within given number of proteins.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--merge-max-protein-gap`"
+                },
+                "bgc_deepbgc_mergemaxnuclgap": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Merge detected BGCs within given number of nucleotides.",
+                    "fa_icon": "fas fa-angle-double-up",
+                    "help_text": "Merge detected BGCs within given number of nucleotides.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> - DeepBGC: `--merge-max-nucl-gap`"
+                },
+                "bgc_deepbgc_minnucl": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Minimum BGC nucleotide length.",
+                    "fa_icon": "fas fa-angle-double-down",
+                    "help_text": "Minimum length a BGC must have (in bp) to be reported as detected.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--min-nucl`"
+                },
+                "bgc_deepbgc_minproteins": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Minimum number of proteins in a BGC.",
+                    "fa_icon": "fas fa-angle-double-down",
+                    "help_text": "Minimum number of proteins in a BGC must have to be reported as 'detected'.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--min-proteins`"
+                },
+                "bgc_deepbgc_mindomains": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Minimum number of protein domains in a BGC.",
+                    "fa_icon": "fas fa-minus-square",
+                    "help_text": "Minimum number of domains a BGC must have to be reported as 'detected'.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--min-domains`"
+                },
+                "bgc_deepbgc_minbiodomains": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "Minimum number of known biosynthetic (as defined by antiSMASH) protein domains in a BGC.",
+                    "fa_icon": "fas fa-minus-square",
+                    "help_text": "Minimum number of biosynthetic protein domains a BGC must have to be reported as 'detected'. This is based on antiSMASH definitions.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--min-bio-domains`"
+                },
+                "bgc_deepbgc_classifierscore": {
+                    "type": "number",
+                    "default": 0.5,
+                    "description": "DeepBGC classification score threshold for assigning classes to BGCs.",
+                    "fa_icon": "fas fa-sort-amount-down",
+                    "help_text": "DeepBGC classification score threshold for assigning classes to BGCs.\n\nFor more information see the DeepBGC [documentation](https://github.com/Merck/deepbgc).\n\n> Modifies tool parameter(s)\n> -  DeepBGC: `--classifier-score`"
+                }
+            },
+            "fa_icon": "fas fa-angle-double-right"
+        },
+        "bgc_gecco": {
+            "title": "BGC: GECCO",
+            "type": "object",
+            "description": "Biosynthetic gene cluster detection using Conditional Random Fields (CRFs). More info: https://gecco.embl.de",
+            "default": "",
+            "properties": {
+                "bgc_skip_gecco": {
+                    "type": "boolean",
+                    "description": "Skip GECCO during the BGC screening.",
+                    "fa_icon": "fas fa-ban"
+                },
+                "bgc_gecco_mask": {
+                    "type": "boolean",
+                    "description": "Enable unknown region masking to prevent genes from stretching across unknown nucleotides.",
+                    "fa_icon": "fas fa-mask",
+                    "help_text": "Enable unknown region masking to prevent genes from stretching across unknown nucleotides during ORF detection based on P(y)rodigal.\n\nFor more information see the GECCO [documentation](https://github.com/zellerlab/GECCO).\n\n> Modifies tool parameter(s):\n> - GECCO: `--mask`"
+                },
+                "bgc_gecco_cds": {
+                    "type": "integer",
+                    "default": 3,
+                    "description": "The minimum number of coding sequences a valid cluster must contain.",
+                    "fa_icon": "fas fa-align-right",
+                    "help_text": "Specify the number of consecutive genes a hit must have to be considered as part of a possible BGC region during BGC extraction.\n\nFor more information see the GECCO [documentation](https://github.com/zellerlab/GECCO).\n\n> Modifies tool parameter(s):\n> - GECCO: `--cds`"
+                },
+                "bgc_gecco_pfilter": {
+                    "type": "number",
+                    "description": "The p-value cutoff for protein domains to be included.",
+                    "fa_icon": "fas fa-filter",
+                    "default": 1e-9,
+                    "help_text": "For more information see the GECCO [documentation](https://github.com/zellerlab/GECCO).\n\n> Modifies tool parameter(s):\n> - GECCO: `--pfilter`"
+                },
+                "bgc_gecco_threshold": {
+                    "type": "number",
+                    "default": 0.8,
+                    "description": "The probability threshold for cluster detection.",
+                    "fa_icon": "fas fa-angle-double-up",
+                    "help_text": "Specify the minimum probability a predicted gene must have to be considered as part of a BGC during BGC extraction.\n\nReducing this value may increase number and length of hits, but will reduce the accuracy of the predictions.\n\nFor more information see the GECCO [documentation](https://github.com/zellerlab/GECCO).\n\n> Modifies tool parameter(s):\n> - GECCO: `--threshold`"
+                },
+                "bgc_gecco_edgedistance": {
+                    "type": "integer",
+                    "default": 0,
+                    "description": "The minimum number of annotated genes that must separate a cluster from the edge.",
+                    "help_text": "The minimum number of annotated genes that must separate a possible BGC cluster from the edge. Edge clusters will still be included if they are longer. A lower number will increase the number of false positives on small contigs. Used during BGC extraction.\n\nFor more information see the GECCO [documentation](https://github.com/zellerlab/GECCO).\n\n> Modifies tool parameter(s):\n> - GECCO: `--edge-distance`",
+                    "fa_icon": "fas fa-ruler-horizontal"
+                }
+            },
+            "fa_icon": "fas fa-angle-double-right"
+        },
         "virus_identification_options": {
             "title": "Virus identification options",
             "type": "object",

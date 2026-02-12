@@ -10,12 +10,12 @@ include { COMBGC                                 } from '../../modules/local/com
 include { TABIX_BGZIP as BGC_TABIX_BGZIP         } from '../../modules/nf-core/tabix/bgzip/main'
 include { MERGE_TAXONOMY_COMBGC                  } from '../../modules/local/merge_taxonomy_combgc'
 
-workflow BGC {
+workflow BGC_DETECTION {
     take:
     fastas // tuple val(meta), path(PREPPED_INPUT.out.fna)
     faas   // tuple val(meta), path(<ANNO_TOOL>.out.faa)
     gbks   // tuple val(meta), path(<ANNO_TOOL>.out.gbk)
-    tsvs   // tuple val(meta), path(MMSEQS_CREATETSV.out.tsv)
+    // tsvs   // tuple val(meta), path(MMSEQS_CREATETSV.out.tsv) See note at bottom - currently is for MMSeqs taxonomy output, but need to change
 
     main:
     ch_versions = Channel.empty()
@@ -104,13 +104,13 @@ workflow BGC {
 
     // COMBGC concatenation
     if (!params.run_taxa_classification) {
-        ch_combgc_summaries = COMBGC.out.tsv.map { it[1] }.collectFile(name: 'combgc_complete_summary.tsv', storeDir: "${params.outdir}/reports/combgc", keepHeader: true)
+        ch_combgc_summaries = COMBGC.out.tsv.map { it[1] }.collectFile(name: 'combgc_complete_summary.tsv', storeDir: "${params.outdir}/Reports/COMBGC", keepHeader: true)
     }
     else {
         ch_combgc_summaries = COMBGC.out.tsv.map { it[1] }.collectFile(name: 'combgc_complete_summary.tsv', keepHeader: true)
     }
 
-    // MERGE_TAXONOMY
+    /* // MERGE_TAXONOMY TODO: Re-enable after we change taxonomy output from MMSeqs to either Kraken2 SingleM or GTDB-tk.
     if (params.run_taxa_classification) {
 
         ch_mmseqs_taxonomy_list = tsvs.map { it[1] }.collect()
@@ -122,7 +122,7 @@ workflow BGC {
 
         BGC_TABIX_BGZIP(ch_tabix_input)
         ch_versions = ch_versions.mix(BGC_TABIX_BGZIP.out.versions_tabix)
-    }
+    } */
 
     emit:
     versions = ch_versions

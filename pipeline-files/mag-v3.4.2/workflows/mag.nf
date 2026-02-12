@@ -27,6 +27,7 @@ include { LONGREAD_PREPROCESSING                                } from '../subwo
 include { SHORTREAD_PREPROCESSING                               } from '../subworkflows/local/shortread_preprocessing'
 include { TAXONOMIC_PROFILING                                   } from '../subworkflows/local/taxonomic_profiling'
 include { TAXONOMIC_STANDARDISATION                             } from '../subworkflows/local/taxonomic_standardisation'
+include { BGC_DETECTION                                         } from '../subworkflows/local/bgc_detection'
 
 //
 // MODULE: Installed directly from nf-core/modules
@@ -46,6 +47,7 @@ include { MMSEQS_DATABASES                                      } from '../modul
 include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
 include { UNTAR                                                 } from '../modules/nf-core/untar/main'
 include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
+include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH                       } from '../modules/nf-core/seqkit/seq/main'
 
 //
 // MODULE: Local to the pipeline
@@ -62,29 +64,6 @@ include { CAT                                                   } from '../modul
 include { CAT_SUMMARY                                           } from '../modules/local/cat_summary'
 include { BIN_SUMMARY                                           } from '../modules/local/bin_summary'
 include { COMBINE_TSV as COMBINE_SUMMARY_TSV                    } from '../modules/local/combine_tsv'
-
-//
-// Modules from taxonomic_profiling subworkflow
-//
-include { KRAKEN2 as KRAKEN2_TAXPROFILING                                        } from '../modules/local/kraken2'
-include { BRACKEN_BRACKEN as BRACKEN_CENTRIFUGER                                 } from '../modules/nf-core/bracken/bracken/main'
-include { BRACKEN_BRACKEN as BRACKEN_KRAKEN                                      } from '../modules/nf-core/bracken/bracken/main'
-include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_KRAKEN2                   } from '../modules/nf-core/taxpasta/standardise/main'
-include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_CENTRIFUGER               } from '../modules/nf-core/taxpasta/standardise/main'
-include { CENTRIFUGER_CENTRIFUGER                                                } from '../modules/local/centrifuger/centrifuger/main'
-include { CENTRIFUGER_KREPORT                                                    } from '../modules/local/centrifuger/kreport/main'
-include { PLOT_TAXHITS                                                           } from '../modules/local/plot_taxhits'
-include { PLOT_INDVTAXHITS as PLOT_KRAKEN2                                       } from '../modules/local/plot_indvtaxhits'
-include { PLOT_INDVTAXHITS as PLOT_CENTRIFUGER                                   } from '../modules/local/plot_indvtaxhits'
-include { PLOT_INDVTAXHITS as PLOT_KRAKEN2BRACKEN                                } from '../modules/local/plot_indvtaxhits'
-include { PLOT_INDVTAXHITS as PLOT_CENTRIFUGERBRACKEN                            } from '../modules/local/plot_indvtaxhits'
-include { KRONA_KTIMPORTTAXONOMY                                                 } from '../modules/nf-core/krona/ktimporttaxonomy/main'
-include { KRAKENTOOLS_KREPORT2KRONA                                              } from '../modules/nf-core/krakentools/kreport2krona/main'
-include { UNTAR as KRAKENDB_UNTAR                                                } from '../modules/nf-core/untar/main'
-include { CENTRIFUGER_GET_DIR                                                    } from '../modules/local/centrifuger/get_dir/main'
-include { BRACKEN_COMBINEBRACKENOUTPUTS                                          } from '../modules/nf-core/bracken/combinebrackenoutputs/main'
-include { KRAKENTOOLS_COMBINEKREPORTS as KRAKENTOOLS_COMBINEKREPORTS_KRAKEN      } from '../modules/nf-core/krakentools/combinekreports/main'
-include { KRAKENTOOLS_COMBINEKREPORTS as KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER } from '../modules/nf-core/krakentools/combinekreports/main'
 
 
 workflow MAG {
@@ -757,6 +736,14 @@ workflow MAG {
             BAKTA_BAKTA(ch_bins_for_bakta, ch_bakta_db, [], [])
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([])
+        }
+
+        if (params.run_bgc_screening) {
+            BGC_DETECTION(
+                BAKTA_BAKTA.out.fna,
+                BAKTA_BAKTA.out.faa,
+                BAKTA_BAKTA.out.gbff
+            )
         }
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
