@@ -48,6 +48,8 @@ include { METAEUK_EASYPREDICT                                   } from '../modul
 include { UNTAR                                                 } from '../modules/nf-core/untar/main'
 include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
 include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH                       } from '../modules/nf-core/seqkit/seq/main'
+include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
+include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
 
 //
 // MODULE: Local to the pipeline
@@ -672,6 +674,22 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
         }
 
+        ch_singlem_bins = ch_input_for_postbinning.filter { meta, _bins ->
+                    meta.domain != "eukarya"
+                }
+        SINGLEM_CLASSIFY(
+            ch_singlem_bins,
+            file(params.singlem_metapkg),
+            "fasta",
+        )
+        ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+
+        SINGLEM_SUMMARISE(
+            SINGLEM_CLASSIFY.out.singleM_output,
+            "species",
+        )
+        ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+
         if ((!params.skip_binqc) || !params.skip_quast || !params.skip_gtdbtk) {
             BIN_SUMMARY(
                 ch_input_for_binsummary,
@@ -703,7 +721,7 @@ workflow MAG {
                 [],
                 [],
             )
-            ch_versions = ch_versions.mix(PROKKA.out.versions.first())
+            ch_versions = ch_versions.mix(PROKKA.out.versions)
         }
 
         /*
@@ -715,12 +733,11 @@ workflow MAG {
 
                 ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
 
-                ch_versions = ch_versions.mix(UNTAR.out.versions.first())
+                ch_versions = ch_versions.mix(UNTAR.out.versions)
 
             }
             else {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
-                    .first()
             }
 
             ch_bins_for_bakta = ch_input_for_postbinning
@@ -739,10 +756,12 @@ workflow MAG {
         }
 
         if (params.run_bgc_screening) {
+            bgc_input_fasta = BAKTA_BAKTA.out.faa
+            bgc_input_gbk = BAKTA_BAKTA.out.gbff
+
             BGC_DETECTION(
-                BAKTA_BAKTA.out.fna,
-                BAKTA_BAKTA.out.faa,
-                BAKTA_BAKTA.out.gbff
+                bgc_input_fasta,
+                bgc_input_gbk,
             )
         }
 

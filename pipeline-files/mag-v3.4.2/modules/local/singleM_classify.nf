@@ -9,6 +9,7 @@ process SINGLEM_CLASSIFY {
     input:
     tuple val(meta), path(reads)
     path(metapackage)
+    val(input_type)
 
     output:
     tuple val(meta), path("${meta.id}_profile.tsv"), path("${meta.id}_otu_table.csv"), emit: singleM_output
@@ -22,13 +23,23 @@ process SINGLEM_CLASSIFY {
     def read_args = params.single_end ? "-1 ${reads[0]}" : "-1 ${reads[0]} -2 ${reads[1]}"
 
     """
-    singlem pipe \\
-        ${read_args} \\
-        -p ${meta.id}_profile.tsv \\
-        --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
-        --otu-table ${meta.id}_otu_table.csv \\
-        --threads ${task.cpus} \\
-        --metapackage ${metapackage}
+    if [ ${input_type} == "fasta" ]; then
+        singlem pipe \\
+            --genome-fasta-files ${reads} \\
+            -p ${meta.id}_profile.tsv \\
+            --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
+            --otu-table ${meta.id}_otu_table.csv \\
+            --threads ${task.cpus} \\
+            --metapackage ${metapackage}
+    else
+        singlem pipe \\
+            ${read_args} \\
+            -p ${meta.id}_profile.tsv \\
+            --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
+            --otu-table ${meta.id}_otu_table.csv \\
+            --threads ${task.cpus} \\
+            --metapackage ${metapackage}
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

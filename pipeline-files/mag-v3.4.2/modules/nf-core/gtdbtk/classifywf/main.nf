@@ -2,7 +2,7 @@ process GTDBTK_CLASSIFYWF {
     tag "${prefix}"
     label 'process_medium'
     conda "${moduleDir}/environment.yml"
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ? 'https://depot.galaxyproject.org/singularity/gtdbtk:2.4.0--pyhdfd78af_1' : 'quay/biocontainers/gtdbtk:2.4.0--pyhdfd78af_1'}"
+    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ? 'https://depot.galaxyproject.org/singularity/gtdbtk:2.6.1--pyh1f0d9b5_1' : 'quay/biocontainers/gtdbtk:2.6.1--pyh1f0d9b5_1'}"
 
     input:
     tuple val(meta)   , path("bins/*")

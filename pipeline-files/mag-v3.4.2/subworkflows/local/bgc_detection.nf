@@ -13,18 +13,12 @@ include { MERGE_TAXONOMY_COMBGC                  } from '../../modules/local/mer
 workflow BGC_DETECTION {
     take:
     fastas // tuple val(meta), path(PREPPED_INPUT.out.fna)
-    faas   // tuple val(meta), path(<ANNO_TOOL>.out.faa)
     gbks   // tuple val(meta), path(<ANNO_TOOL>.out.gbk)
-    // tsvs   // tuple val(meta), path(MMSEQS_CREATETSV.out.tsv) See note at bottom - currently is for MMSeqs taxonomy output, but need to change
+    // tsvs   // tuple val(meta), path(MMSEQS_CREATETSV.out.tsv) See note at bottom - currently is for MMSeqs2 taxonomy output, but need to change
 
     main:
     ch_versions = Channel.empty()
     ch_bgcresults_for_combgc = Channel.empty()
-
-    // When adding new tool that requires FAA, make sure to update conditions
-    // in funcscan.nf around annotation and AMP subworkflow execution
-    // to ensure annotation is executed!
-    ch_faa_for_bgc_hmmsearch = faas
 
     // ANTISMASH
     if (!params.bgc_skip_antismash) {
@@ -32,10 +26,10 @@ workflow BGC_DETECTION {
         // Important for future maintenance: For CI tests, only the "else" option below is used. Both options should be tested locally whenever the antiSMASH module gets updated.
         if (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).extension == 'gz') {
             UNTAR([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
-            ch_antismash_databases = UNTAR.out.untar.map { _meta, dir -> [dir] }
+            ch_antismash_databases = UNTAR.out.untar
         }
         else (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).isDirectory()) {
-            ch_antismash_databases = Channel.fromPath(params.bgc_antismash_db, checkIfExists: true).first()
+            ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true))
         }
 
         ANTISMASH_ANTISMASH(gbks, ch_antismash_databases, [])
@@ -102,15 +96,17 @@ workflow BGC_DETECTION {
     COMBGC(ch_bgcresults_for_combgc)
     ch_versions = ch_versions.mix(COMBGC.out.versions)
 
-    // COMBGC concatenation
-    if (!params.run_taxa_classification) {
-        ch_combgc_summaries = COMBGC.out.tsv.map { it[1] }.collectFile(name: 'combgc_complete_summary.tsv', storeDir: "${params.outdir}/Reports/COMBGC", keepHeader: true)
+    // COMBGC concatenation NOTE: turned off for now since it is still tied to MMSeqs2 output
+    /* if (!params.run_taxa_classification) {
+        ch_combgc_summaries = COMBGC.out.tsv
+            .collectFile(name: 'combgc_complete_summary.tsv', tempDir: "${params.outdir}/Reports/COMBGC", keepHeader: true)
     }
     else {
-        ch_combgc_summaries = COMBGC.out.tsv.map { it[1] }.collectFile(name: 'combgc_complete_summary.tsv', keepHeader: true)
-    }
+        ch_combgc_summaries = COMBGC.out.tsv
+            .collectFile(name: 'combgc_complete_summary.tsv', keepHeader: true)
+    } */
 
-    /* // MERGE_TAXONOMY TODO: Re-enable after we change taxonomy output from MMSeqs to either Kraken2 SingleM or GTDB-tk.
+    /* // MERGE_TAXONOMY TODO: Re-enable after we change taxonomy output from MMSeqs2 to either Kraken2 SingleM or GTDB-tk.
     if (params.run_taxa_classification) {
 
         ch_mmseqs_taxonomy_list = tsvs.map { it[1] }.collect()

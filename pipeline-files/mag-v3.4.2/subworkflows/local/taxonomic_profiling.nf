@@ -362,6 +362,7 @@ workflow TAXONOMIC_PROFILING {
         SINGLEM_CLASSIFY(
             singlem_short_reads,
             file(params.singlem_metapkg),
+            "fastq",
         )
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
