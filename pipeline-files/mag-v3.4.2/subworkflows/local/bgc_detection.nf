@@ -28,7 +28,7 @@ workflow BGC_DETECTION {
             UNTAR([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
             ch_antismash_databases = UNTAR.out.untar
         }
-        else (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).isDirectory()) {
+        else (params.bgc_antismash_db) {
             ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true))
         }
 
@@ -55,8 +55,7 @@ workflow BGC_DETECTION {
 
     // DEEPBGC
     if (!params.bgc_skip_deepbgc) {
-        ch_deepbgc_database = Channel.fromPath(params.bgc_deepbgc_db, checkIfExists: true)
-            .first()
+        ch_deepbgc_database = Channel.fromPath(file(params.bgc_deepbgc_db, checkIfExists: true))
 
         DEEPBGC_PIPELINE(gbks, ch_deepbgc_database)
         ch_versions = ch_versions.mix(DEEPBGC_PIPELINE.out.versions)
@@ -86,11 +85,8 @@ workflow BGC_DETECTION {
 
     ch_bgcresults_for_combgc
         .join(fastas, remainder: true)
-        .filter { meta, bgcfile, fasta ->
-            if (!bgcfile) {
-                log.warn("BGC workflow: No hits found by BGC tools; comBGC summary tool will not be run for sample: ${meta.id}")
-            }
-            return [meta, bgcfile, fasta]
+        .map { meta, bgcfile, fasta ->
+            [meta, bgcfile, fasta]
         }
 
     COMBGC(ch_bgcresults_for_combgc)
