@@ -568,6 +568,9 @@ workflow MAG {
             ? ch_input_for_postbinning_bins
             : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
 
+        ch_input_for_postbinning = ch_input_for_postbinning.unique()
+            .groupTuple()
+
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
         // read channel are not empty
         ch_reads_for_depths = ch_short_reads
@@ -677,6 +680,8 @@ workflow MAG {
         ch_singlem_bins = ch_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
+            .unique()
+            .groupTuple()
         SINGLEM_CLASSIFY(
             ch_singlem_bins,
             file(params.singlem_metapkg),
@@ -740,7 +745,7 @@ workflow MAG {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            ch_bins_for_bakta = ch_input_for_postbinning
+            ch_bins_for_bakta = ch_input_for_postbinning.unique()
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.getBaseName()]

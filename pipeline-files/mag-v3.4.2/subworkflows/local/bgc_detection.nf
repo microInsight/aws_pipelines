@@ -24,11 +24,11 @@ workflow BGC_DETECTION {
     if (!params.bgc_skip_antismash) {
         // Check whether user supplies database and/or antismash directory. If not, obtain them via the module antismash/antismashdownloaddatabases.
         // Important for future maintenance: For CI tests, only the "else" option below is used. Both options should be tested locally whenever the antiSMASH module gets updated.
-        if (params.bgc_antismash_db && file(params.bgc_antismash_db, checkIfExists: true).extension == 'gz') {
+        if (params.bgc_antismash_db && params.bgc_antismash_db.endsWith(".gz")) {
             UNTAR([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
             ch_antismash_databases = UNTAR.out.untar
         }
-        else (params.bgc_antismash_db) {
+        else {
             ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true))
         }
 
@@ -66,8 +66,8 @@ workflow BGC_DETECTION {
     if (!params.bgc_skip_gecco) {
         ch_gecco_input = gbks
             .groupTuple()
-            .multiMap {
-                fastas: [it[0], it[1], []]
+            .map { meta, gbk ->
+                [meta, gbk, []]
             }
 
         GECCO_RUN(ch_gecco_input, [])
