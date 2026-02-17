@@ -366,8 +366,13 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
+        ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
+            .collect()
+            .groupTuple()
+
+
         SINGLEM_SUMMARISE(
-            SINGLEM_CLASSIFY.out.singleM_output,
+            ch_singlem_classify_results,
             "genus",
         )
         ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)

@@ -54,7 +54,7 @@ workflow GTDBTK {
     // Filter bins based on collected metrics: completeness, contamination
     ch_filtered_bins = bins
         .transpose()
-        .map { meta, bin -> [bin.getName(), bin, meta]}
+        .map { meta, bin -> [bin.baseName, bin, meta]}
         .join(ch_bin_metrics, failOnDuplicate: true)
         .map { _bin_name, bin, meta, completeness, contamination -> [meta, bin, completeness, contamination] }
         .branch {

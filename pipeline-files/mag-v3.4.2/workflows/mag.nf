@@ -469,10 +469,10 @@ workflow MAG {
         if (params.ancient_dna && !params.skip_ancient_damagecorrection) {
             BINNING(
                 BINNING_PREPARATION.out.grouped_mappings
-                .join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled)
-                .map { meta, _contigs, bams, bais, corrected_contigs ->
-                    [meta, corrected_contigs, bams, bais]
-                },
+                    .join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled)
+                    .map { meta, _contigs, bams, bais, corrected_contigs ->
+                        [meta, corrected_contigs, bams, bais]
+                    },
                 params.bin_min_size,
                 params.bin_max_size,
             )
@@ -560,8 +560,8 @@ workflow MAG {
             }
         }
         else {
-            ch_input_for_postbinning_bins = ch_binning_results_bins.unique()
-            ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins.unique())
+            ch_input_for_postbinning_bins = ch_binning_results_bins
+            ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
         }
 
         ch_input_for_postbinning = params.exclude_unbins_from_postbinning
@@ -571,6 +571,9 @@ workflow MAG {
         ch_derepd_input_for_postbinning = ch_input_for_postbinning
             .unique()
             .groupTuple()
+            .map { meta, bins ->
+                [meta, bins.flatten()]
+            }
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
         // read channel are not empty
@@ -712,7 +715,7 @@ workflow MAG {
             ch_bins_for_prokka = ch_derepd_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
-                    def meta_new = meta + [id: bin.getBaseName()]
+                    def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
                 }
                 .filter { meta, _bin ->
@@ -746,7 +749,7 @@ workflow MAG {
             ch_bins_for_bakta = ch_derepd_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
-                    def meta_new = meta + [id: bin.getBaseName()]
+                    def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
                 }
                 .filter { meta, _bin ->
@@ -775,7 +778,7 @@ workflow MAG {
                     meta.domain in ["eukarya", "unclassified"]
                 }
                 .map { meta, bin ->
-                    def meta_new = meta + [id: bin.getBaseName()]
+                    def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
                 }
 
