@@ -568,7 +568,8 @@ workflow MAG {
             ? ch_input_for_postbinning_bins
             : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
 
-        ch_input_for_postbinning = ch_input_for_postbinning.unique()
+        ch_derepd_input_for_postbinning = ch_input_for_postbinning
+            .unique()
             .groupTuple()
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
@@ -580,7 +581,7 @@ workflow MAG {
             )
             .groupTuple(by: 0)
 
-        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
+        DEPTHS(ch_derepd_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -591,7 +592,7 @@ workflow MAG {
 
         ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
-            BIN_QC(ch_input_for_postbinning.unique())
+            BIN_QC(ch_derepd_input_for_postbinning)
 
             ch_bin_qc_summary = BIN_QC.out.qc_summary
             ch_versions = ch_versions.mix(BIN_QC.out.versions)
@@ -599,8 +600,7 @@ workflow MAG {
 
         ch_quast_bins_summary = Channel.empty()
         if (!params.skip_quast) {
-            ch_input_for_quast_bins = ch_input_for_postbinning
-                .groupTuple()
+            ch_input_for_quast_bins = ch_derepd_input_for_postbinning
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
                     [meta, new_bins.unique()]
@@ -628,7 +628,7 @@ workflow MAG {
             ch_cat_db = CAT_DB_GENERATE.out.db
         }
         CAT(
-            ch_input_for_postbinning,
+            ch_derepd_input_for_postbinning,
             ch_cat_db,
         )
         // Group all classification results for each sample in a single file
@@ -659,7 +659,7 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
             if (gtdb) {
 
-                ch_gtdb_bins = ch_input_for_postbinning.filter { meta, _bins ->
+                ch_gtdb_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
 
@@ -677,11 +677,9 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
         }
 
-        ch_singlem_bins = ch_input_for_postbinning.filter { meta, _bins ->
+        ch_singlem_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
-            .unique()
-            .groupTuple()
         SINGLEM_CLASSIFY(
             ch_singlem_bins,
             file(params.singlem_metapkg),
@@ -711,7 +709,7 @@ workflow MAG {
          */
 
         if (!params.skip_prokka) {
-            ch_bins_for_prokka = ch_input_for_postbinning
+            ch_bins_for_prokka = ch_derepd_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.getBaseName()]
@@ -745,7 +743,7 @@ workflow MAG {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            ch_bins_for_bakta = ch_input_for_postbinning.unique()
+            ch_bins_for_bakta = ch_derepd_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.getBaseName()]
@@ -771,7 +769,7 @@ workflow MAG {
         }
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
-            ch_bins_for_metaeuk = ch_input_for_postbinning
+            ch_bins_for_metaeuk = ch_derepd_input_for_postbinning
                 .transpose()
                 .filter { meta, _bin ->
                     meta.domain in ["eukarya", "unclassified"]
