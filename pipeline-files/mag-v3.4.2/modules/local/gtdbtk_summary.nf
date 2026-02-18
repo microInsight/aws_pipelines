@@ -25,7 +25,7 @@ process GTDBTK_SUMMARY {
     """
     chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/summary_gtdbtk.py
 
-    if [ -z "$args" ] && [ -z "$discarded" ] && [ -z "$summaries" ] && [ -z "$filtered" ] && [ -z "$failed" ]; then
+    if [ -z "${args}" ] && [ -z "${discarded}" ] && [ -z "${summaries}" ] && [ -z "${filtered}" ] && [ -z "${failed}" ]; then
         echo "No input files provided to GTDBTK_SUMMARY. Exiting without running summary script."
         echo -e "summary:\nversions:" > versions.yml
         exit 0
