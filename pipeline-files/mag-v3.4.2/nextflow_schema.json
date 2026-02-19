@@ -840,6 +840,14 @@
                     "description": "Specify sequencing centre name required for Prokka's compliance mode.",
                     "default": "NFC"
                 },
+                "annotate_assembly": {
+                    "type": "boolean",
+                    "description": "Prokka and/or Bakta annotation of assemblies."
+                },
+                "annotate_bins": {
+                    "type": "boolean",
+                    "description": "Prokka and/or Bakta annotation of bins."
+                },
                 "skip_prokka": {
                     "type": "boolean",
                     "description": "Skip Prokka genome annotation."

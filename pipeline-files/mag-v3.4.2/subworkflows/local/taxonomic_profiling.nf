@@ -100,27 +100,9 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_k2_results = KRAKEN2_TAXPROFILING.out.report
 
-        TAXPASTA_STANDARDISE_KRAKEN2(
-            KRAKEN2_TAXPROFILING.out.report.map { meta, file ->
-                [meta + [tool: "kraken2"], file]
-            },
-            'tsv',
-            ch_taxpasta_tax_dir,
-        )
-        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile)
-        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
-
         ch_bracken_input = ch_k2_results.map { meta, report ->
             [meta + [tool: 'kraken2'], report]
         }
-
-        PLOT_KRAKEN2(
-            TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile,
-            "Kraken2, Taxpasta",
-            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
-            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-            file(params.tax_prof_template, checkIfExists: true),
-        )
 
         BRACKEN_KRAKEN(ch_bracken_input, k2_database, 'S')
         ch_versions = ch_versions.mix(BRACKEN_KRAKEN.out.versions)
@@ -170,23 +152,6 @@ workflow TAXONOMIC_PROFILING {
         ch_plot_reports = ch_plot_reports.mix(CENTRIFUGER_KREPORT.out.kreport)
         ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
-        TAXPASTA_STANDARDISE_CENTRIFUGER(
-            CENTRIFUGER_KREPORT.out.kreport.map { meta, file ->
-                [meta + [tool: "centrifuge"], file]
-            },
-            'tsv',
-            ch_taxpasta_tax_dir,
-        )
-        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.versions)
-        ch_plot_reports = ch_plot_reports.mix(TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile)
-
-        PLOT_CENTRIFUGER(
-            TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile,
-            "Centrifuger, Taxpasta",
-            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
-            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
-            file(params.tax_prof_template, checkIfExists: true),
-        )
     }
     else {
         // Regular or at least Expected case - both Kraken2 and Centrifuger provided
@@ -214,9 +179,10 @@ workflow TAXONOMIC_PROFILING {
         ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
 
         PLOT_KRAKEN2(
-            TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.filter { meta, _report ->
-                meta.tool == 'kraken2'
-            },
+            TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+                .filter { meta, _report ->
+                    meta.tool == 'kraken2'
+                },
             "Kraken2, Taxpasta",
             Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
             file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),

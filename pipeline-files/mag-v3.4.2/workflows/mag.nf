@@ -48,6 +48,7 @@ include { MMSEQS_DATABASES                                      } from '../modul
 include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
 include { UNTAR                                                 } from '../modules/nf-core/untar/main'
 include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
+include { BAKTA_PLOT                                            } from '../modules/nf-core/bakta/plot/main'
 include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH                       } from '../modules/nf-core/seqkit/seq/main'
 include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
 include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
@@ -573,7 +574,8 @@ workflow MAG {
             .unique()
             .groupTuple()
             .map { meta, bins ->
-                [meta, bins.flatten()]
+                def new_bins = bins.flatten()
+                    [meta, new_bins.unique()]
             }
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
@@ -688,67 +690,119 @@ workflow MAG {
 
         }
 
-        /*
-         * Prokka: Genome annotation
-         */
-
-        if (!params.skip_prokka) {
-            ch_bins_for_prokka = ch_derepd_input_for_postbinning
-                .map { meta, bin ->
-                    def meta_new = meta + [id: bin.baseName]
-                    [meta_new, bin]
-                }
-                .filter { meta, _bin ->
-                    meta.domain != "eukarya"
-                }
-
-            PROKKA(
-                ch_bins_for_prokka,
-                [],
-                [],
-            )
-            ch_versions = ch_versions.mix(PROKKA.out.versions)
-        }
-
-        /*
-         * Bakta annotation
-        */
-        if (!params.skip_bakta) {
-            if (params.annotation_bakta_db.endsWith(".tar.gz")) {
-                UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
-
-                ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
-
-                ch_versions = ch_versions.mix(UNTAR.out.versions)
-
-            }
-            else {
-                ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
+        // Prokka and/or Bakta annotation of bins and/or assemblies, depending on user choice, and using the dereplicated bins for post-binning analyses to avoid name overlap errors.
+        if (params.annotate_assembly) {
+            /*
+             * Prokka: Genome annotation
+             */
+            if (!params.skip_prokka) {
+                PROKKA(
+                    ch_assemblies,
+                    [],
+                    [],
+                )
+                ch_versions = ch_versions.mix(PROKKA.out.versions)
             }
 
-            ch_bins_for_bakta = ch_derepd_input_for_postbinning
-                .map { meta, bin ->
-                    def meta_new = meta + [id: bin.baseName]
-                    [meta_new, bin]
+            /*
+             * Bakta annotation
+             */
+            if (!params.skip_bakta) {
+                if (params.annotation_bakta_db.endsWith(".tar.gz")) {
+                    UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
+
+                    ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
+
+                    ch_versions = ch_versions.mix(UNTAR.out.versions)
+
                 }
-                .filter { meta, _bin ->
-                    meta.domain != "eukarya"
+                else {
+                    ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
                 }
 
-            BAKTA_BAKTA(ch_bins_for_bakta, ch_bakta_db, [], [])
-            ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
-            ch_multiqc_files = BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([])
+                BAKTA_BAKTA(ch_assemblies, "assembly", ch_bakta_db, [], [])
+                ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
+                ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
+
+                BAKTA_PLOT(BAKTA_BAKTA.out.json, "assembly")
+                ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
+            }
+
+            if (params.run_bgc_screening) {
+                bgc_input_fasta = BAKTA_BAKTA.out.faa
+                bgc_input_gbk = BAKTA_BAKTA.out.gbff
+
+                BGC_DETECTION(
+                    bgc_input_fasta,
+                    bgc_input_gbk,
+                )
+            }
         }
 
-        if (params.run_bgc_screening) {
-            bgc_input_fasta = BAKTA_BAKTA.out.faa
-            bgc_input_gbk = BAKTA_BAKTA.out.gbff
+        if (params.annotate_bins) {
+            if (!params.skip_prokka) {
+                ch_bins_for_prokka = ch_derepd_input_for_postbinning
+                    .map { meta, bin ->
+                        def meta_new = meta + [id: bin.baseName]
+                        [meta_new, bin]
+                    }
+                    .filter { meta, _bin ->
+                        meta.domain != "eukarya"
+                    }
 
-            BGC_DETECTION(
-                bgc_input_fasta,
-                bgc_input_gbk,
-            )
+                PROKKA(
+                    ch_bins_for_prokka,
+                    [],
+                    [],
+                )
+                ch_versions = ch_versions.mix(PROKKA.out.versions)
+            }
+
+            /*
+             * Bakta annotation
+            */
+            if (!params.skip_bakta) {
+                if (params.annotation_bakta_db.endsWith(".tar.gz")) {
+                    UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
+
+                    ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
+
+                    ch_versions = ch_versions.mix(UNTAR.out.versions)
+
+                }
+                else {
+                    ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
+                }
+
+                ch_bins_for_bakta = ch_derepd_input_for_postbinning
+                    .map { meta, bin ->
+                        def meta_new = meta + [id: bin.baseName]
+                        [meta_new, bin]
+                    }
+                    .filter { meta, _bin ->
+                        meta.domain != "eukarya"
+                    }
+
+                BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
+                ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
+                ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
+
+                BAKTA_PLOT(BAKTA_BAKTA.out.json, "bins")
+                ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
+            }
+
+            if (params.run_bgc_screening) {
+                bgc_input_fasta = BAKTA_BAKTA.out.faa
+                bgc_input_gbk = BAKTA_BAKTA.out.gbff
+
+                BGC_DETECTION(
+                    bgc_input_fasta,
+                    bgc_input_gbk,
+                )
+            }
         }
+
+
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
             ch_bins_for_metaeuk = ch_derepd_input_for_postbinning
