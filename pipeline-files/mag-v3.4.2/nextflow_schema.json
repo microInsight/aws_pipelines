@@ -743,6 +743,10 @@
                     "type": "boolean",
                     "description": "Skip MEGAHIT assembly."
                 },
+                "skip_unicycler": {
+                    "type": "boolean",
+                    "description": "Skip Unicycler assembly."
+                },
                 "skip_quast": {
                     "type": "boolean",
                     "description": "Skip metaQUAST."

@@ -36,6 +36,7 @@ include { BGC_DETECTION                                         } from '../subwo
 include { MEGAHIT                                               } from '../modules/nf-core/megahit/main'
 include { SPADES as METASPADES                                  } from '../modules/nf-core/spades/main'
 include { SPADES as METASPADESHYBRID                            } from '../modules/nf-core/spades/main'
+include { UNICYCLER                                             } from '../modules/nf-core/unicycler/main'
 include { GUNZIP as GUNZIP_ASSEMBLIES                           } from '../modules/nf-core/gunzip'
 include { GUNZIP as GUNZIP_ASSEMBLYINPUT                        } from '../modules/nf-core/gunzip'
 include { GUNZIP as GUNZIP_PYRODIGAL_FAA                        } from '../modules/nf-core/gunzip'
@@ -48,10 +49,7 @@ include { MMSEQS_DATABASES                                      } from '../modul
 include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
 include { UNTAR                                                 } from '../modules/nf-core/untar/main'
 include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
-include { BAKTA_PLOT                                            } from '../modules/nf-core/bakta/plot/main'
 include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH                       } from '../modules/nf-core/seqkit/seq/main'
-include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
-include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
 
 //
 // MODULE: Local to the pipeline
@@ -68,7 +66,9 @@ include { CAT                                                   } from '../modul
 include { CAT_SUMMARY                                           } from '../modules/local/cat_summary'
 include { BIN_SUMMARY                                           } from '../modules/local/bin_summary'
 include { COMBINE_TSV as COMBINE_SUMMARY_TSV                    } from '../modules/local/combine_tsv'
-
+include { BAKTA_PLOT                                            } from '../modules/local/bakta/plot/main'
+include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
+include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
 
 workflow MAG {
     take:
@@ -364,6 +364,16 @@ workflow MAG {
             ch_versions = ch_versions.mix(MEGAHIT.out.versions)
         }
 
+        if (!params.single_end && !params.skip_unicycler) {
+            UNICYCLER(ch_short_reads_grouped)
+            ch_unicycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
+                def meta_new = meta + [assembler: 'Unicycler']
+                [meta_new, assembly]
+            }
+            ch_assembled_contigs = ch_assembled_contigs.mix(ch_unicycler_assemblies)
+            ch_versions = ch_versions.mix(UNICYCLER.out.versions)
+        }
+
         GUNZIP_ASSEMBLIES(ch_assembled_contigs)
         ch_versions = ch_versions.mix(GUNZIP_ASSEMBLIES.out.versions)
 
@@ -574,8 +584,7 @@ workflow MAG {
             .unique()
             .groupTuple()
             .map { meta, bins ->
-                def new_bins = bins.flatten()
-                    [meta, new_bins.unique()]
+                [meta, bins.unique()]
             }
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
