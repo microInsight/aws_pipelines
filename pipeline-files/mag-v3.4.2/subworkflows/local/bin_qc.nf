@@ -181,6 +181,7 @@ workflow BIN_QC {
         )
     }
 
+    ch_gunc_summary = Channel.empty()
     if (params.run_gunc) {
         /*
          * GUNC
@@ -201,13 +202,13 @@ workflow BIN_QC {
         ch_versions.mix(GUNC_RUN.out.versions)
 
         // Make sure to keep directory in sync with modules.conf
-        GUNC_RUN.out.maxcss_level_tsv
-            .map { _meta, gunc_summary -> gunc_summary }
-            .collectFile(
-                name: "gunc_summary.tsv",
-                keepHeader: true,
-                storeDir: "${params.outdir}/GenomeBinning/QC/",
-            )
+        ch_gunc_summary = GUNC_RUN.out.maxcss_level_tsv
+                            .map { _meta, gunc_summary -> gunc_summary }
+                            .collectFile(
+                                name: "gunc_summary.tsv",
+                                keepHeader: true,
+                                storeDir: "${params.outdir}/GenomeBinning/QC/",
+                            )
 
         if (params.binqc_tool == 'checkm') {
             ch_input_to_mergecheckm = GUNC_RUN.out.maxcss_level_tsv.combine(CHECKM_QA.out.output, by: 0)
@@ -228,6 +229,7 @@ workflow BIN_QC {
 
     emit:
     qc_summary    = qc_summary
+    gunc_summary  = ch_gunc_summary
     multiqc_files = ch_multiqc_files
     versions      = ch_versions
 }

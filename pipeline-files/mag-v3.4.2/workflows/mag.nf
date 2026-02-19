@@ -20,6 +20,7 @@ include { BIN_QC                                                } from '../subwo
 include { BINNING_REFINEMENT                                    } from '../subworkflows/local/binning_refinement'
 include { VIRUS_IDENTIFICATION                                  } from '../subworkflows/local/virus_identification'
 include { GTDBTK                                                } from '../subworkflows/local/gtdbtk'
+include { CATPACK                                               } from '../subworkflows/local/catpack'
 include { ANCIENT_DNA_ASSEMBLY_VALIDATION                       } from '../subworkflows/local/ancient_dna'
 include { DOMAIN_CLASSIFICATION                                 } from '../subworkflows/local/domain_classification'
 include { DEPTHS                                                } from '../subworkflows/local/depths'
@@ -619,38 +620,17 @@ workflow MAG {
         }
 
         /*
-         * CAT: Bin Annotation Tool (BAT) are pipelines for the taxonomic classification of long DNA sequences and metagenome assembled genomes (MAGs/bins)
+         * CATPACK: bin / contig taxonomic classification
          */
-        ch_cat_db = Channel.empty()
-        if (params.cat_db) {
-            CAT_DB(ch_cat_db_file)
-            ch_cat_db = CAT_DB.out.db
-        }
-        else if (params.cat_db_generate) {
-            CAT_DB_GENERATE()
-            ch_cat_db = CAT_DB_GENERATE.out.db
-        }
-        CAT(
-            ch_derepd_input_for_postbinning,
-            ch_cat_db,
-        )
-        // Group all classification results for each sample in a single file
-        ch_cat_summary = CAT.out.tax_classification_names.collectFile(keepHeader: true) { meta, classification ->
-            ["${meta.id}.txt", classification]
-        }
-        // Group all classification results for the whole run in a single file
-        CAT_SUMMARY(
-            ch_cat_summary.collect()
-        )
-        ch_versions = ch_versions.mix(CAT.out.versions.first())
-        ch_versions = ch_versions.mix(CAT_SUMMARY.out.versions)
+        ch_catpack_summary = channel.empty()
+        if (params.cat_db || params.cat_db_generate) {
+            CATPACK(
+                ch_input_for_postbinning_bins,
+                ch_input_for_postbinning_unbins,
+            )
+            ch_versions = ch_versions.mix(CATPACK.out.versions)
 
-        // If CAT is not run, then the CAT global summary should be an empty channel
-        if (params.cat_db_generate || params.cat_db) {
-            ch_cat_global_summary = CAT_SUMMARY.out.combined
-        }
-        else {
-            ch_cat_global_summary = Channel.empty()
+            ch_catpack_summary = CATPACK.out.summary
         }
 
         /*
@@ -702,9 +682,10 @@ workflow MAG {
                 ch_bin_qc_summary.ifEmpty([]),
                 ch_quast_bins_summary.ifEmpty([]),
                 ch_gtdbtk_summary.ifEmpty([]),
-                ch_cat_global_summary.ifEmpty([]),
+                ch_catpack_summary.ifEmpty([]),
                 params.binqc_tool,
             )
+
         }
 
         /*
@@ -713,7 +694,6 @@ workflow MAG {
 
         if (!params.skip_prokka) {
             ch_bins_for_prokka = ch_derepd_input_for_postbinning
-                .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
@@ -747,7 +727,6 @@ workflow MAG {
             }
 
             ch_bins_for_bakta = ch_derepd_input_for_postbinning
-                .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]

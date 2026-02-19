@@ -389,10 +389,10 @@ workflow TAXONOMIC_PROFILING {
 // Custom Functions
 
 /**
-* Group all profiles per reference database.
+* Group all profiles per MI ID.
 *
 * @param ch_profiles A channel containing pairs of a meta map and the report of
-*   a given profiler, where meta must contain a key `db_name`.
+*   a given profiler, where meta must contain a key `id`.
 * @return A channel with one element per reference database. Each element is a
 *   pair of a meta map with an `id` key and all corresponding profiles.
 */

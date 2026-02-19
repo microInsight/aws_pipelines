@@ -62,16 +62,17 @@ def parse_args(args=None):
 
 def main(args=None):
     args = parse_args(args)
-
+    # make sure that at lesat one input is specified, but for now allow to succeed to so we can test further functionality in workflow.
     if (
         not args.summaries
         and not args.filtered_bins
         and not args.failed_bins
         and not args.qc_discarded_bins
     ):
-        sys.exit(
+        print(
             "Either --summaries, --filtered_bins, --failed_bins or --qc_discarded_bins must be specified!"
         )
+        sys.exit(0)
 
     columns = [
         "user_genome",

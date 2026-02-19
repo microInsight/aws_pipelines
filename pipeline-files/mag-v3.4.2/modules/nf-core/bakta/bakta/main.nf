@@ -24,6 +24,7 @@ process BAKTA_BAKTA {
     tuple val(meta), path("${prefix}.hypotheticals.faa"), emit: hypotheticals_faa
     tuple val(meta), path("${prefix}.tsv")              , emit: tsv
     tuple val(meta), path("${prefix}.txt")              , emit: txt
+    tuple val(meta), path("${prefix}.json")             , emit: json
     path "versions.yml"                                 , emit: versions
 
     when:

@@ -76,8 +76,11 @@ workflow BINNING_REFINEMENT {
 
     ch_input_for_dastool = ch_contigs_for_dastool
         .join(ch_fastatocontig2bin_for_dastool, by: 0)
-        .map { meta, contigs, bins -> [meta, contigs, bins, []] }
 
+    ch_versions = ch_versions.mix(DASTOOL_FASTATOCONTIG2BIN_METABAT2.out.versions.first())
+    ch_versions = ch_versions.mix(DASTOOL_FASTATOCONTIG2BIN_MAXBIN2.out.versions.first())
+    ch_versions = ch_versions.mix(DASTOOL_FASTATOCONTIG2BIN_CONCOCT.out.versions.first())
+    ch_versions = ch_versions.mix(DASTOOL_FASTATOCONTIG2BIN_COMEBIN.out.versions.first())
 
     // Run DAStool
     DASTOOL_DASTOOL(ch_input_for_dastool, [], [])

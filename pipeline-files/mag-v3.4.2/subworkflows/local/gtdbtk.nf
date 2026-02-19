@@ -39,7 +39,7 @@ workflow GTDBTK {
             }
     } else {
         // Collect completeness and contamination metrics from CheckM/CheckM2 summary
-        bin_name = params.binqc_tool == 'checkm' ? 'Bin Id' : 'Name'
+        bin_name = params.binqc_tool in ['checkm', 'checkm2'] ? 'Bin Id' : 'Name'
 
         ch_bin_metrics = bin_qc_summary
             .splitCsv(header: true, sep: '\t')
@@ -96,9 +96,14 @@ workflow GTDBTK {
         gtdb_mash
     )
 
+    ch_summaries = GTDBTK_CLASSIFYWF.out.summary
+        .map{ it[1] }
+        .collect()
+    ch_summaries.ifEmpty([])
+
     GTDBTK_SUMMARY (
         ch_filtered_bins.discarded.map{it[1]}.collect().ifEmpty([]),
-        GTDBTK_CLASSIFYWF.out.summary.map{it[1]}.collect().ifEmpty([]),
+        ch_summaries,
         [],
         []
     )
