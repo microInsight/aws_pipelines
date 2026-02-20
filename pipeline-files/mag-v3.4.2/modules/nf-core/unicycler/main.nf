@@ -26,7 +26,7 @@ process UNICYCLER {
     def long_reads  = longreads ? "-l $longreads" : ""
     """
     unicycler \\
-        --threads $task.cpus \\
+        --threads ${task.cpus} \\
         $args \\
         $short_reads \\
         $long_reads \\

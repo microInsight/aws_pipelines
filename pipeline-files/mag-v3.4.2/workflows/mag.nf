@@ -364,7 +364,7 @@ workflow MAG {
             ch_versions = ch_versions.mix(MEGAHIT.out.versions)
         }
 
-        if (!params.single_end && !params.skip_unicycler) {
+        if (!params.skip_unicycler) {
             UNICYCLER(ch_short_reads_grouped)
             ch_unicycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
                 def meta_new = meta + [assembler: 'Unicycler']
