@@ -23,12 +23,13 @@ process UNICYCLER {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def reads = meta.single_end || !reads2 ? "-r ${reads1}" : "-1 ${reads1} -2 ${reads2}"
+    def reads = meta.single_end || !reads2 ? "-s ${reads1}" : "-1 ${reads1} -2 ${reads2}"
     // def long_reads  = longreads ? "-l $longreads" : ""
     """
     unicycler \\
         $reads \\
         -t ${task.cpus} \\
+        --spades-options "--meta" \\
         $args \\
         --out ./
 

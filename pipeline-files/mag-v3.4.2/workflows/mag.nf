@@ -365,10 +365,7 @@ workflow MAG {
         }
 
         if (!params.skip_unicycler) {
-            UNICYCLER(ch_short_reads_assembly
-                        .filter { reads -> !reads[0].single_end }
-                        .map { meta, reads -> [meta, reads, []] }
-                    )
+            UNICYCLER(ch_short_reads_grouped)
             ch_unicycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
                 def meta_new = meta + [assembler: 'Unicycler']
                 [meta_new, assembly]
@@ -674,9 +671,13 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
         }
 
-        ch_singlem_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
-                    meta.domain != "eukarya"
-                }
+        ch_singlem_bins = ch_input_for_postbinning.unique()
+            .map { meta, bins ->
+                [meta, bins]
+            }
+            .filter { meta, _bins ->
+                meta.domain != "eukarya"
+            }
         SINGLEM_CLASSIFY(
             ch_singlem_bins,
             file(params.singlem_metapkg),
