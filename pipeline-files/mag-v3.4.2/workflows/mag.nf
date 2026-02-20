@@ -282,7 +282,7 @@ workflow MAG {
         }
         else {
             ch_short_reads_grouped = ch_short_reads_assembly
-                .filter { it[0].single_end }
+                .filter { reads -> reads[0].single_end }
                 .map { meta, reads -> [meta, [reads], []] }
                 .mix(
                     ch_short_reads_assembly.filter { !it[0].single_end }.map { meta, reads -> [meta, [reads[0]], [reads[1]]] }
@@ -365,7 +365,10 @@ workflow MAG {
         }
 
         if (!params.skip_unicycler) {
-            UNICYCLER(ch_short_reads_grouped)
+            UNICYCLER(ch_short_reads_assembly
+                        .filter { reads -> !reads[0].single_end }
+                        .map { meta, reads -> [meta, reads, []] }
+                    )
             ch_unicycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
                 def meta_new = meta + [assembler: 'Unicycler']
                 [meta_new, assembly]
