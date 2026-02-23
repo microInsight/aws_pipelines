@@ -91,10 +91,10 @@ workflow MAG {
         ch_host_bowtie2index = Channel.fromPath("${host_bowtie2index}", checkIfExists: true).first()
     }
     else if (params.host_fasta) {
-        ch_host_fasta = Channel.fromPath("${params.host_fasta}", checkIfExists: true).first() ?: false
+        ch_host_fasta = Channel.fromPath(file("${params.host_fasta}", checkIfExists: true)) ?: false
 
         if (params.host_fasta_bowtie2index) {
-            ch_host_bowtie2index = Channel.fromPath("${params.host_fasta_bowtie2index}", checkIfExists: true).first()
+            ch_host_bowtie2index = Channel.fromPath(file("${params.host_fasta_bowtie2index}", checkIfExists: true))
         }
         else {
             ch_host_bowtie2index = Channel.empty()
@@ -571,10 +571,14 @@ workflow MAG {
 
         ch_derepd_input_for_postbinning = ch_input_for_postbinning
             .unique()
-            .groupTuple()
-            .map { meta, bins ->
-                [meta, bins.unique()]
+            .flatMap { meta, bins ->
+                bins.collect { bin ->
+                    tuple(groupKey(meta, bins.size()), bin)
+                }
             }
+            .groupTuple()
+            .map { key, bins -> tuple(key.getGroupTarget(), bins) }
+
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
         // read channel are not empty
@@ -585,7 +589,7 @@ workflow MAG {
             )
             .groupTuple(by: 0)
 
-        DEPTHS(ch_derepd_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
+        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -596,7 +600,7 @@ workflow MAG {
 
         ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
-            BIN_QC(ch_derepd_input_for_postbinning)
+            BIN_QC(ch_input_for_postbinning)
 
             ch_bin_qc_summary = BIN_QC.out.qc_summary
             ch_versions = ch_versions.mix(BIN_QC.out.versions)
@@ -604,7 +608,7 @@ workflow MAG {
 
         ch_quast_bins_summary = Channel.empty()
         if (!params.skip_quast) {
-            ch_input_for_quast_bins = ch_derepd_input_for_postbinning
+            ch_input_for_quast_bins = ch_input_for_postbinning
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
                     [meta, new_bins.unique()]
@@ -642,7 +646,7 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
             if (gtdb) {
 
-                ch_gtdb_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
+                ch_gtdb_bins = ch_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
 
@@ -660,13 +664,11 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
         }
 
-        ch_singlem_bins = ch_input_for_postbinning.unique()
-            .map { meta, bins ->
-                [meta, bins]
-            }
+        ch_singlem_bins = ch_derepd_input_for_postbinning
             .filter { meta, _bins ->
-                meta.domain != "eukarya"
-            }
+                    meta.domain != "eukarya"
+                }
+
         SINGLEM_CLASSIFY(
             ch_singlem_bins,
             file(params.singlem_metapkg),
@@ -674,8 +676,11 @@ workflow MAG {
         )
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
+        ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
+            .collect()
+            .groupTuple()
         SINGLEM_SUMMARISE(
-            SINGLEM_CLASSIFY.out.singleM_output,
+            ch_singlem_classify_results,
             "species",
         )
         ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
@@ -784,6 +789,7 @@ workflow MAG {
                     .filter { meta, _bin ->
                         meta.domain != "eukarya"
                     }
+                    .groupTuple(by: 0)
 
                 BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
                 ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)

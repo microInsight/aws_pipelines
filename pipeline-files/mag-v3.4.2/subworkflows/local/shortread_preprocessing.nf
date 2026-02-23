@@ -91,7 +91,7 @@ workflow SHORTREAD_PREPROCESSING {
 
     if (params.host_fasta) {
         if (params.host_fasta_bowtie2index) {
-            ch_host_bowtie2index = file(params.host_fasta_bowtie2index, checkIfExists: true)
+            ch_host_bowtie2index = Channel.fromPath(file(params.host_fasta_bowtie2index, checkIfExists: true))
         }
         else {
             BOWTIE2_HOST_REMOVAL_BUILD(

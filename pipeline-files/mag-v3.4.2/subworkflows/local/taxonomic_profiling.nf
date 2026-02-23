@@ -10,6 +10,7 @@ include { BRACKEN_BRACKEN as BRACKEN_KRAKEN                                     
 include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_KRAKEN2                   } from '../../modules/nf-core/taxpasta/standardise/main'
 include { TAXPASTA_STANDARDISE as TAXPASTA_STANDARDISE_CENTRIFUGER               } from '../../modules/nf-core/taxpasta/standardise/main'
 include { CENTRIFUGER_CENTRIFUGER                                                } from '../../modules/local/centrifuger/centrifuger/main'
+include { CENTRIFUGER_QUANT                                                      } from '../../modules/local/centrifuger/quantification/main'
 include { CENTRIFUGER_KREPORT                                                    } from '../../modules/local/centrifuger/kreport/main'
 include { PLOT_TAXHITS                                                           } from '../../modules/local/plot_taxhits'
 include { PLOT_INDVTAXHITS as PLOT_KRAKEN2                                       } from '../../modules/local/plot_indvtaxhits'
@@ -98,9 +99,8 @@ workflow TAXONOMIC_PROFILING {
                 [meta + [tool: 'kraken2'], report]
             }
         )
-        ch_k2_results = KRAKEN2_TAXPROFILING.out.report
 
-        ch_bracken_input = ch_k2_results.map { meta, report ->
+        ch_bracken_input = KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
             [meta + [tool: 'kraken2'], report]
         }
 
@@ -134,13 +134,19 @@ workflow TAXONOMIC_PROFILING {
     else if (params.skip_kraken2 && !params.skip_centrifuger) {
         // Centrifuger taxonomic profiling - no Kraken2
         CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
-        ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
-        ch_centrifuger_results = ch_cent_results.mix(
-            CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
+        ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results
+            .map { meta, result ->
                 [meta + [tool: 'centrifuger'], result]
             }
-        )
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
+
+        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            CENTRIFUGER_QUANT.out.quant_results.map { meta, report ->
+                [meta + [classifier: "centrifuger"] + [tool: 'centrifuge'], report]
+            }
+        )
+        ch_versions = ch_versions.mix(CENTRIFUGER_QUANT.out.versions)
 
         CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
         ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
@@ -198,6 +204,14 @@ workflow TAXONOMIC_PROFILING {
             }
         )
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
+
+        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            CENTRIFUGER_QUANT.out.quant_results.map { meta, report ->
+                [meta + [classifier: "centrifuger"] + [tool: 'centrifuge'], report]
+            }
+        )
+        ch_versions = ch_versions.mix(CENTRIFUGER_QUANT.out.versions)
 
         CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
         ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
