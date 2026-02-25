@@ -15,7 +15,6 @@ process BAKTA_BAKTA {
     path prodigal_tf
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
     tuple val(meta), path("${prefix}.${out_type}.faa")              , emit: faa
     tuple val(meta), path("${prefix}.${out_type}.ffn")              , emit: ffn
     tuple val(meta), path("${prefix}.${out_type}.fna")              , emit: fna

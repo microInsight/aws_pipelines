@@ -159,7 +159,7 @@ workflow TAXONOMIC_PROFILING {
         ch_parsedreports = ch_parsedreports.mix(CENTRIFUGER_KREPORT.out.kreport)
 
     }
-    else {
+    else if (!params.skip_kraken2 && !params.skip_centrifuger) {
         // Regular or at least Expected case - both Kraken2 and Centrifuger provided
         KRAKEN2_TAXPROFILING(ch_k2_reads, k2_database)
         ch_versions = ch_versions.mix(KRAKEN2_TAXPROFILING.out.versions)
@@ -347,9 +347,6 @@ workflow TAXONOMIC_PROFILING {
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
         ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
-            .collect()
-            .groupTuple()
-
 
         SINGLEM_SUMMARISE(
             ch_singlem_classify_results,

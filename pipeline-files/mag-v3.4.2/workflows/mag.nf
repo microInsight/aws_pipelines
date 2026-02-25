@@ -3,75 +3,75 @@
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-include { MULTIQC                                               } from '../modules/nf-core/multiqc/main'
-include { paramsSummaryMap                                      } from 'plugin/nf-schema'
-include { paramsSummaryMultiqc                                  } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { softwareVersionsToYAML                                } from '../subworkflows/nf-core/utils_nfcore_pipeline'
-include { methodsDescriptionText                                } from '../subworkflows/local/utils_nfcore_mag_pipeline'
+include { MULTIQC                                      } from '../modules/nf-core/multiqc/main'
+include { paramsSummaryMap                             } from 'plugin/nf-schema'
+include { paramsSummaryMultiqc                         } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { softwareVersionsToYAML                       } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { methodsDescriptionText                       } from '../subworkflows/local/utils_nfcore_mag_pipeline'
 
 //
 // SUBWORKFLOW: Consisting of a mix of local and nf-core subworkflows
 //
-include { BINNING_PREPARATION                                   } from '../subworkflows/local/binning_preparation'
-include { SHORTREAD_BINNING_PREPARATION                         } from '../subworkflows/local/binning_preparation_shortread'
-include { LONGREAD_BINNING_PREPARATION                          } from '../subworkflows/local/binning_preparation_longread'
-include { BINNING                                               } from '../subworkflows/local/binning'
-include { BIN_QC                                                } from '../subworkflows/local/bin_qc'
-include { BINNING_REFINEMENT                                    } from '../subworkflows/local/binning_refinement'
-include { VIRUS_IDENTIFICATION                                  } from '../subworkflows/local/virus_identification'
-include { GTDBTK                                                } from '../subworkflows/local/gtdbtk'
-include { CATPACK                                               } from '../subworkflows/local/catpack'
-include { ANCIENT_DNA_ASSEMBLY_VALIDATION                       } from '../subworkflows/local/ancient_dna'
-include { DOMAIN_CLASSIFICATION                                 } from '../subworkflows/local/domain_classification'
-include { DEPTHS                                                } from '../subworkflows/local/depths'
-include { LONGREAD_PREPROCESSING                                } from '../subworkflows/local/longread_preprocessing'
-include { SHORTREAD_PREPROCESSING                               } from '../subworkflows/local/shortread_preprocessing'
-include { TAXONOMIC_PROFILING                                   } from '../subworkflows/local/taxonomic_profiling'
-include { TAXONOMIC_STANDARDISATION                             } from '../subworkflows/local/taxonomic_standardisation'
-include { BGC_DETECTION                                         } from '../subworkflows/local/bgc_detection'
+include { BINNING_PREPARATION                          } from '../subworkflows/local/binning_preparation'
+include { SHORTREAD_BINNING_PREPARATION                } from '../subworkflows/local/binning_preparation_shortread'
+include { LONGREAD_BINNING_PREPARATION                 } from '../subworkflows/local/binning_preparation_longread'
+include { BINNING                                      } from '../subworkflows/local/binning'
+include { BIN_QC                                       } from '../subworkflows/local/bin_qc'
+include { BINNING_REFINEMENT                           } from '../subworkflows/local/binning_refinement'
+include { VIRUS_IDENTIFICATION                         } from '../subworkflows/local/virus_identification'
+include { GTDBTK                                       } from '../subworkflows/local/gtdbtk'
+include { CATPACK                                      } from '../subworkflows/local/catpack'
+include { ANCIENT_DNA_ASSEMBLY_VALIDATION              } from '../subworkflows/local/ancient_dna'
+include { DOMAIN_CLASSIFICATION                        } from '../subworkflows/local/domain_classification'
+include { DEPTHS                                       } from '../subworkflows/local/depths'
+include { LONGREAD_PREPROCESSING                       } from '../subworkflows/local/longread_preprocessing'
+include { SHORTREAD_PREPROCESSING                      } from '../subworkflows/local/shortread_preprocessing'
+include { TAXONOMIC_PROFILING                          } from '../subworkflows/local/taxonomic_profiling'
+include { TAXONOMIC_STANDARDISATION                    } from '../subworkflows/local/taxonomic_standardisation'
+include { BGC_DETECTION                                } from '../subworkflows/local/bgc_detection'
 
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { MEGAHIT                                               } from '../modules/nf-core/megahit/main'
-include { SPADES as METASPADES                                  } from '../modules/nf-core/spades/main'
-include { SPADES as METASPADESHYBRID                            } from '../modules/nf-core/spades/main'
-include { GUNZIP as GUNZIP_ASSEMBLIES                           } from '../modules/nf-core/gunzip'
-include { GUNZIP as GUNZIP_ASSEMBLYINPUT                        } from '../modules/nf-core/gunzip'
-include { GUNZIP as GUNZIP_PYRODIGAL_FAA                        } from '../modules/nf-core/gunzip'
-include { GUNZIP as GUNZIP_PYRODIGAL_FNA                        } from '../modules/nf-core/gunzip'
-include { GUNZIP as GUNZIP_PYRODIGAL_GBK                        } from '../modules/nf-core/gunzip'
-include { PRODIGAL                                              } from '../modules/nf-core/prodigal/main'
-include { PYRODIGAL                                             } from '../modules/nf-core/pyrodigal/main'
-include { PROKKA                                                } from '../modules/nf-core/prokka/main'
-include { MMSEQS_DATABASES                                      } from '../modules/nf-core/mmseqs/databases/main'
-include { METAEUK_EASYPREDICT                                   } from '../modules/nf-core/metaeuk/easypredict/main'
-include { UNTAR                                                 } from '../modules/nf-core/untar/main'
-include { BAKTA_BAKTA                                           } from '../modules/nf-core/bakta/bakta/main'
-include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH                       } from '../modules/nf-core/seqkit/seq/main'
+include { MEGAHIT                                      } from '../modules/nf-core/megahit/main'
+include { SPADES as METASPADES                         } from '../modules/nf-core/spades/main'
+include { SPADES as METASPADESHYBRID                   } from '../modules/nf-core/spades/main'
+include { GUNZIP as GUNZIP_ASSEMBLIES                  } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_ASSEMBLYINPUT               } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_FAA               } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_FNA               } from '../modules/nf-core/gunzip'
+include { GUNZIP as GUNZIP_PYRODIGAL_GBK               } from '../modules/nf-core/gunzip'
+include { PRODIGAL                                     } from '../modules/nf-core/prodigal/main'
+include { PYRODIGAL                                    } from '../modules/nf-core/pyrodigal/main'
+include { PROKKA                                       } from '../modules/nf-core/prokka/main'
+include { MMSEQS_DATABASES                             } from '../modules/nf-core/mmseqs/databases/main'
+include { METAEUK_EASYPREDICT                          } from '../modules/nf-core/metaeuk/easypredict/main'
+include { UNTAR                                        } from '../modules/nf-core/untar/main'
+include { BAKTA_BAKTA                                  } from '../modules/nf-core/bakta/bakta/main'
+include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH              } from '../modules/nf-core/seqkit/seq/main'
 
 //
 // MODULE: Local to the pipeline
 //
-include { POOL_SINGLE_READS as POOL_SHORT_SINGLE_READS          } from '../modules/local/pool_single_reads'
-include { POOL_PAIRED_READS                                     } from '../modules/local/pool_paired_reads'
-include { POOL_SINGLE_READS as POOL_LONG_READS                  } from '../modules/local/pool_single_reads'
-include { QUAST                                                 } from '../modules/local/quast'
-include { QUAST_BINS                                            } from '../modules/local/quast_bins'
-include { QUAST_BINS_SUMMARY                                    } from '../modules/local/quast_bins_summary'
-include { CAT_DB                                                } from '../modules/local/cat_db'
-include { CAT_DB_GENERATE                                       } from '../modules/local/cat_db_generate'
-include { CAT                                                   } from '../modules/local/cat'
-include { CAT_SUMMARY                                           } from '../modules/local/cat_summary'
-include { BIN_SUMMARY                                           } from '../modules/local/bin_summary'
-include { COMBINE_TSV as COMBINE_SUMMARY_TSV                    } from '../modules/local/combine_tsv'
-include { BAKTA_PLOT                                            } from '../modules/local/bakta/plot/main'
-include { SINGLEM_CLASSIFY                                      } from '../modules/local/singleM_classify'
-include { SINGLEM_SUMMARISE                                     } from '../modules/local/singleM_summarise.nf'
+include { POOL_SINGLE_READS as POOL_SHORT_SINGLE_READS } from '../modules/local/pool_single_reads'
+include { POOL_PAIRED_READS                            } from '../modules/local/pool_paired_reads'
+include { POOL_SINGLE_READS as POOL_LONG_READS         } from '../modules/local/pool_single_reads'
+include { QUAST                                        } from '../modules/local/quast'
+include { QUAST_BINS                                   } from '../modules/local/quast_bins'
+include { QUAST_BINS_SUMMARY                           } from '../modules/local/quast_bins_summary'
+include { CAT_DB                                       } from '../modules/local/cat_db'
+include { CAT_DB_GENERATE                              } from '../modules/local/cat_db_generate'
+include { CAT                                          } from '../modules/local/cat'
+include { CAT_SUMMARY                                  } from '../modules/local/cat_summary'
+include { BIN_SUMMARY                                  } from '../modules/local/bin_summary'
+include { COMBINE_TSV as COMBINE_SUMMARY_TSV           } from '../modules/local/combine_tsv'
+include { BAKTA_PLOT                                   } from '../modules/local/bakta/plot/main'
+include { SINGLEM_CLASSIFY                             } from '../modules/local/singleM_classify'
+include { SINGLEM_SUMMARISE                            } from '../modules/local/singleM_summarise.nf'
 
 workflow MAG {
     take:
-    ch_raw_short_reads // channel: samplesheet read in from --input
+    ch_raw_short_reads  // channel: samplesheet read in from --input
     ch_raw_long_reads
     ch_input_assemblies
 
@@ -195,9 +195,10 @@ workflow MAG {
         ch_versions = ch_versions.mix(SHORTREAD_PREPROCESSING.out.versions)
         ch_multiqc_files = ch_multiqc_files.mix(
             SHORTREAD_PREPROCESSING.out.multiqc_files.collect { it[1] }.ifEmpty([])
-            )
+        )
         ch_short_reads = SHORTREAD_PREPROCESSING.out.short_reads
         ch_short_reads_assembly = SHORTREAD_PREPROCESSING.out.short_reads_assembly
+        ch_singlem_reads = SHORTREAD_PREPROCESSING.out.singlem_short_reads
     }
     else {
         ch_short_reads = ch_raw_short_reads.map { meta, reads ->
@@ -227,17 +228,17 @@ workflow MAG {
                                     Taxonomic information
     ================================================================================
     */
+    if (!params.assembly_input) {
+        if (!params.skip_taxonomic_profiling) {
+            TAXONOMIC_PROFILING(
+                ch_short_reads,
+                ch_singlem_reads,
+            )
 
-    if(!params.skip_taxonomic_profiling) {
-        TAXONOMIC_PROFILING(
-            ch_short_reads,
-            SHORTREAD_PREPROCESSING.out.singlem_short_reads
-        )
-
-        ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
-        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
+            ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
+            ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
+        }
     }
-
 
     /*
     ================================================================================
@@ -246,7 +247,6 @@ workflow MAG {
     */
 
     if (!params.assembly_input) {
-
         // Co-assembly preparation: grouping for MEGAHIT and for pooling for SPAdes
         if (params.coassemble_group) {
             // short reads
@@ -371,6 +371,8 @@ workflow MAG {
         ch_longread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['FLYE', 'METAMDBG'] }
     }
     else {
+        ch_assemblies = Channel.empty()
+
         ch_assemblies_split = ch_input_assemblies.branch { _meta, assembly ->
             gzipped: assembly.getExtension() == "gz"
             ungzip: true
@@ -398,7 +400,7 @@ workflow MAG {
     if (params.annotation_tool == 'pyrodigal') {
         PYRODIGAL(
             ch_assemblies,
-            "gff"
+            "gff",
         )
 
         GUNZIP_PYRODIGAL_FAA(PYRODIGAL.out.faa)
@@ -409,7 +411,8 @@ workflow MAG {
         ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_FAA.out.versions)
         ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_FNA.out.versions)
         ch_versions = ch_versions.mix(GUNZIP_PYRODIGAL_GBK.out.versions)
-    } else {
+    }
+    else {
         PRODIGAL(
             ch_assemblies,
             'gff',
@@ -443,7 +446,7 @@ workflow MAG {
             ch_shortread_assemblies,
             ch_short_reads,
             ch_longread_assemblies,
-            ch_long_reads
+            ch_long_reads,
         )
         ch_versions = ch_versions.mix(BINNING_PREPARATION.out.versions)
     }
@@ -469,11 +472,9 @@ workflow MAG {
 
         if (params.ancient_dna && !params.skip_ancient_damagecorrection) {
             BINNING(
-                BINNING_PREPARATION.out.grouped_mappings
-                    .join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled)
-                    .map { meta, _contigs, bams, bais, corrected_contigs ->
-                        [meta, corrected_contigs, bams, bais]
-                    },
+                BINNING_PREPARATION.out.grouped_mappings.join(ANCIENT_DNA_ASSEMBLY_VALIDATION.out.contigs_recalled).map { meta, _contigs, bams, bais, corrected_contigs ->
+                    [meta, corrected_contigs, bams, bais]
+                },
                 params.bin_min_size,
                 params.bin_max_size,
             )
@@ -571,13 +572,11 @@ workflow MAG {
 
         ch_derepd_input_for_postbinning = ch_input_for_postbinning
             .unique()
-            .flatMap { meta, bins ->
-                bins.collect { bin ->
-                    tuple(groupKey(meta, bins.size()), bin)
-                }
-            }
             .groupTuple()
-            .map { key, bins -> tuple(key.getGroupTarget(), bins) }
+            .map { key, bins ->
+                def new_bins = bins.flatten()
+                [key, new_bins.unique()]
+            }
 
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
@@ -589,7 +588,7 @@ workflow MAG {
             )
             .groupTuple(by: 0)
 
-        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
+        DEPTHS(ch_derepd_input_for_postbinning.unique(), BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -600,7 +599,7 @@ workflow MAG {
 
         ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
-            BIN_QC(ch_input_for_postbinning)
+            BIN_QC(ch_input_for_postbinning.unique())
 
             ch_bin_qc_summary = BIN_QC.out.qc_summary
             ch_versions = ch_versions.mix(BIN_QC.out.versions)
@@ -609,12 +608,13 @@ workflow MAG {
         ch_quast_bins_summary = Channel.empty()
         if (!params.skip_quast) {
             ch_input_for_quast_bins = ch_input_for_postbinning
+                .groupTuple()
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
-                    [meta, new_bins.unique()]
+                    [meta, new_bins]
                 }
 
-            QUAST_BINS(ch_input_for_quast_bins)
+            QUAST_BINS(ch_input_for_quast_bins.unique())
             ch_versions = ch_versions.mix(QUAST_BINS.out.versions)
             ch_quast_bin_summary = QUAST_BINS.out.quast_bin_summaries.collectFile(keepHeader: true) { meta, summary ->
                 ["${meta.id}.tsv", summary]
@@ -646,7 +646,7 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
             if (gtdb) {
 
-                ch_gtdb_bins = ch_input_for_postbinning.filter { meta, _bins ->
+                ch_gtdb_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
 
@@ -664,10 +664,9 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
         }
 
-        ch_singlem_bins = ch_derepd_input_for_postbinning
-            .filter { meta, _bins ->
-                    meta.domain != "eukarya"
-                }
+        ch_singlem_bins = ch_input_for_postbinning.filter { meta, _bins ->
+            meta.domain != "eukarya"
+        }
 
         SINGLEM_CLASSIFY(
             ch_singlem_bins,
@@ -679,6 +678,10 @@ workflow MAG {
         ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
             .collect()
             .groupTuple()
+            .map { meta, results ->
+                [meta, results]
+            }
+
         SINGLEM_SUMMARISE(
             ch_singlem_classify_results,
             "species",
@@ -694,126 +697,75 @@ workflow MAG {
                 ch_catpack_summary.ifEmpty([]),
                 params.binqc_tool,
             )
-
         }
 
-        // Prokka and/or Bakta annotation of bins and/or assemblies, depending on user choice, and using the dereplicated bins for post-binning analyses to avoid name overlap errors.
-        if (params.annotate_assembly) {
-            /*
-             * Prokka: Genome annotation
-             */
-            if (!params.skip_prokka) {
-                PROKKA(
-                    ch_assemblies,
-                    [],
-                    [],
-                )
-                ch_versions = ch_versions.mix(PROKKA.out.versions)
-            }
-
-            /*
-             * Bakta annotation
-             */
-            if (!params.skip_bakta) {
-                if (params.annotation_bakta_db.endsWith(".tar.gz")) {
-                    UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
-
-                    ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
-
-                    ch_versions = ch_versions.mix(UNTAR.out.versions)
-
+        // Prokka and/or Bakta annotation of bins and using the dereplicated bins for post-binning analyses to avoid name overlap errors.
+        if (!params.skip_prokka) {
+            ch_bins_for_prokka = ch_derepd_input_for_postbinning
+                .unique()
+                .transpose()
+                .map { meta, bin ->
+                    def meta_new = meta + [id: bin.baseName]
+                    [meta_new, bin]
                 }
-                else {
-                    ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
+                .filter { meta, _bin ->
+                    meta.domain != "eukarya"
                 }
 
-                BAKTA_BAKTA(ch_assemblies, "assembly", ch_bakta_db, [], [])
-                ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
-                ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
-
-                BAKTA_PLOT(BAKTA_BAKTA.out.json, "assembly")
-                ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
-            }
-
-            if (params.run_bgc_screening) {
-                bgc_input_fasta = BAKTA_BAKTA.out.faa
-                bgc_input_gbk = BAKTA_BAKTA.out.gbff
-
-                BGC_DETECTION(
-                    bgc_input_fasta,
-                    bgc_input_gbk,
-                )
-            }
+            PROKKA(
+                ch_bins_for_prokka,
+                [],
+                [],
+            )
+            ch_versions = ch_versions.mix(PROKKA.out.versions)
         }
 
-        if (params.annotate_bins) {
-            if (!params.skip_prokka) {
-                ch_bins_for_prokka = ch_derepd_input_for_postbinning
-                    .map { meta, bin ->
-                        def meta_new = meta + [id: bin.baseName]
-                        [meta_new, bin]
-                    }
-                    .filter { meta, _bin ->
-                        meta.domain != "eukarya"
-                    }
+        /*
+         * Bakta annotation
+        */
+        if (!params.skip_bakta) {
+            if (params.annotation_bakta_db.endsWith(".tar.gz")) {
+                UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
 
-                PROKKA(
-                    ch_bins_for_prokka,
-                    [],
-                    [],
-                )
-                ch_versions = ch_versions.mix(PROKKA.out.versions)
+                ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
+
+                ch_versions = ch_versions.mix(UNTAR.out.versions)
+            }
+            else {
+                ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            /*
-             * Bakta annotation
-            */
-            if (!params.skip_bakta) {
-                if (params.annotation_bakta_db.endsWith(".tar.gz")) {
-                    UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
-
-                    ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
-
-                    ch_versions = ch_versions.mix(UNTAR.out.versions)
-
+            ch_bins_for_bakta = ch_derepd_input_for_postbinning
+                .unique()
+                .transpose()
+                .map { meta, bin ->
+                    def meta_new = meta + [id: bin.baseName]
+                    [meta_new, bin]
                 }
-                else {
-                    ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
+                .filter { meta, _bin ->
+                    meta.domain != "eukarya"
                 }
 
-                ch_bins_for_bakta = ch_derepd_input_for_postbinning
-                    .map { meta, bin ->
-                        def meta_new = meta + [id: bin.baseName]
-                        [meta_new, bin]
-                    }
-                    .filter { meta, _bin ->
-                        meta.domain != "eukarya"
-                    }
-                    .groupTuple(by: 0)
+            BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
+            ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
+            ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
-                BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
-                ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
-                ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
-
-                BAKTA_PLOT(BAKTA_BAKTA.out.json, "bins")
-                ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
-            }
-
-            if (params.run_bgc_screening) {
-                bgc_input_fasta = BAKTA_BAKTA.out.faa
-                bgc_input_gbk = BAKTA_BAKTA.out.gbff
-
-                BGC_DETECTION(
-                    bgc_input_fasta,
-                    bgc_input_gbk,
-                )
-            }
+            BAKTA_PLOT(BAKTA_BAKTA.out.json, "bins")
+            ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
+        if (params.run_bgc_screening) {
+            bgc_input_fasta = BAKTA_BAKTA.out.faa
+            bgc_input_gbk = BAKTA_BAKTA.out.gbff
 
+            BGC_DETECTION(
+                bgc_input_fasta,
+                bgc_input_gbk,
+            )
+        }
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
-            ch_bins_for_metaeuk = ch_derepd_input_for_postbinning
+            ch_bins_for_metaeuk = ch_input_for_postbinning
                 .transpose()
                 .filter { meta, _bin ->
                     meta.domain in ["eukarya", "unclassified"]
@@ -825,6 +777,75 @@ workflow MAG {
 
             METAEUK_EASYPREDICT(ch_bins_for_metaeuk, ch_metaeuk_db)
             ch_versions = ch_versions.mix(METAEUK_EASYPREDICT.out.versions)
+        }
+    }
+
+    // annotation of assemblies and BGC detection on assemblies
+    if (params.skip_binning) {
+        SINGLEM_CLASSIFY(
+            ch_assemblies,
+            file(params.singlem_metapkg),
+            "fasta",
+        )
+        ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
+
+        ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
+            .collect()
+            .groupTuple()
+            .map { meta, results ->
+                [meta, results]
+            }
+
+        SINGLEM_SUMMARISE(
+            ch_singlem_classify_results,
+            "species",
+        )
+        ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
+
+
+        /*
+        * Prokka: Genome annotation
+        */
+        if (!params.skip_prokka) {
+            PROKKA(
+                ch_assemblies,
+                [],
+                [],
+            )
+            ch_versions = ch_versions.mix(PROKKA.out.versions)
+        }
+
+        /*
+         * Bakta annotation
+         */
+        if (!params.skip_bakta) {
+            if (params.annotation_bakta_db.endsWith(".tar.gz")) {
+                UNTAR([['id': 'bakta_full_database'], file(params.annotation_bakta_db, checkIfExists: true)])
+
+                ch_bakta_db = UNTAR.out.untar.map { it -> it[1] }
+
+                ch_versions = ch_versions.mix(UNTAR.out.versions)
+            }
+            else {
+                ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
+            }
+
+            BAKTA_BAKTA(ch_assemblies, "assembly", ch_bakta_db, [], [])
+            ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
+            ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
+
+            BAKTA_PLOT(BAKTA_BAKTA.out.json, "assembly")
+            ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
+        }
+
+        if (params.run_bgc_screening) {
+            bgc_input_fasta = BAKTA_BAKTA.out.faa
+            bgc_input_gbk = BAKTA_BAKTA.out.gbff
+
+            BGC_DETECTION(
+                bgc_input_fasta,
+                bgc_input_gbk,
+            )
         }
     }
 
@@ -878,9 +899,9 @@ workflow MAG {
         )
     )
 
-//    if (params.skip_taxonomic_profiling == false) {
-//        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_kreports.collect { it[1] }.ifEmpty([]))
-//    }
+    //    if (params.skip_taxonomic_profiling == false) {
+    //        ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_kreports.collect { it[1] }.ifEmpty([]))
+    //    }
 
     if (!params.skip_quast) {
         ch_multiqc_files = ch_multiqc_files.mix(QUAST.out.report.collect().ifEmpty([]))
@@ -896,6 +917,10 @@ workflow MAG {
 
     if (!params.skip_binning && !params.skip_prokka) {
         ch_multiqc_files = ch_multiqc_files.mix(PROKKA.out.txt.collect { it[1] }.ifEmpty([]))
+    }
+
+    if (!params.skip_binning && !params.skip_bakta) {
+        ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
     }
 
     if (!params.skip_binning && !params.skip_binqc && params.binqc_tool == 'busco') {
@@ -914,5 +939,5 @@ workflow MAG {
 
     emit:
     multiqc_report = MULTIQC.out.report.toList() // channel: /path/to/multiqc_report.html
-    versions = ch_versions // channel: [ path(versions.yml) ]
+    versions       = ch_versions // channel: [ path(versions.yml) ]
 }

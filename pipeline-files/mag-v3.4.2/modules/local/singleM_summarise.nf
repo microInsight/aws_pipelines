@@ -22,20 +22,20 @@ process SINGLEM_SUMMARISE {
     """
     singlem summarise \\
         --input-taxonomic-profile ${singlem_profile} \\
-        --output-species-by-site-relative-abundance ${meta.id}_${taxonomic_level}_by_site.csv \\
+        --output-species-by-site-relative-abundance ${meta.id}-${meta.bin}_${taxonomic_level}_by_site.csv \\
         --output-species-by-site-level ${taxonomic_level}
 
     singlem summarise \\
         --input-taxonomic-profile ${singlem_profile} \\
-        --output-taxonomic-profile-with-extras ${meta.id}_profile_with_extras.tsv
+        --output-taxonomic-profile-with-extras ${meta.id}-${meta.bin}_profile_with_extras.tsv
 
     singlem summarise \\
         --input-otu-table ${singlem_otu_tables} \\
-        --output-otu-table ${meta.id}_combined_otu_table.csv
+        --output-otu-table ${meta.id}-${meta.bin}_combined_otu_table.csv
 
     singlem summarise \\
         --input-otu-table ${singlem_otu_tables} \\
-        --krona ${meta.id}_otu_krona.html
+        --krona ${meta.id}-${meta.bin}_otu_krona.html
 
 
 

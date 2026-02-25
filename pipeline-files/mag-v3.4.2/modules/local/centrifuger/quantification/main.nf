@@ -25,10 +25,11 @@ process CENTRIFUGER_QUANT {
     """
     db_name=`find -L ${db} -name "*.1.cfr" -not -name "._*"  | sed 's/\\.1.cfr\$//'`
 
-    centrifuger-quant \\
+    (centrifuger-quant \\
         -x \$db_name \\
         -c $class_file \\
-        --output-format 0
+        --output-format 0) >> ${prefix}-quant-results.txt
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
