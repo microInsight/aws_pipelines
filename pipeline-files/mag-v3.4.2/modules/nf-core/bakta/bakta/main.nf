@@ -1,6 +1,6 @@
 process BAKTA_BAKTA {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_high'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -15,7 +15,7 @@ process BAKTA_BAKTA {
     path prodigal_tf
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
+    // tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
     tuple val(meta), path("${prefix}.${out_type}.faa")              , emit: faa
     tuple val(meta), path("${prefix}.${out_type}.ffn")              , emit: ffn
     tuple val(meta), path("${prefix}.${out_type}.fna")              , emit: fna

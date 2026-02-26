@@ -235,8 +235,17 @@ workflow MAG {
                 ch_singlem_reads,
             )
 
+            TAXONOMIC_STANDARDISATION(
+                TAXONOMIC_PROFILING.out.taxonomic_profiles,
+                tax_prof_gtdb_metadata,
+                ch_taxpasta_tax_dir
+            )
+
             ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
+
+            ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
+            ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
         }
     }
 
