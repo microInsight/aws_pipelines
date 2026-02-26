@@ -12,7 +12,7 @@ process SINGLEM_CLASSIFY {
     val(input_type)
 
     output:
-    tuple val(meta), path("${meta.id}-${meta.bin}_profile.tsv"), path("${meta.id}-${meta.bin}_otu_table.csv"), emit: singleM_output
+    tuple val(meta), path("${meta.id}_profile.tsv"), path("${meta.id}_otu_table.csv"), emit: singleM_output
     tuple val(meta), path("*.tsv")                                                   , emit: singleM_profile
     tuple val(meta), path("*.csv")                                                   , emit: singleM_otu
     tuple val(meta), path("*.html")                                                  , emit: singleM_krona
@@ -26,17 +26,17 @@ process SINGLEM_CLASSIFY {
     if [ ${input_type} == "fasta" ]; then
         singlem pipe \\
             --genome-fasta-files ${reads} \\
-            -p ${meta.id}-${meta.bin}_profile.tsv \\
-            --taxonomic-profile-krona ${meta.id}-${meta.bin}_profile_krona.html \\
+            -p ${meta.id}_profile.tsv \\
+            --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
             --otu-table ${meta.id}_otu_table.csv \\
             --threads ${task.cpus} \\
             --metapackage ${metapackage}
     else
         singlem pipe \\
             ${read_args} \\
-            -p ${meta.id}-${meta.bin}_profile.tsv \\
-            --taxonomic-profile-krona ${meta.id}-${meta.bin}_profile_krona.html \\
-            --otu-table ${meta.id}-${meta.bin}_otu_table.csv \\
+            -p ${meta.id}_profile.tsv \\
+            --taxonomic-profile-krona ${meta.id}_profile_krona.html \\
+            --otu-table ${meta.id}_otu_table.csv \\
             --threads ${task.cpus} \\
             --metapackage ${metapackage}
     fi

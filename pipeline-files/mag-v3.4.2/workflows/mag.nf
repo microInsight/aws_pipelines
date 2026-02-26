@@ -236,16 +236,14 @@ workflow MAG {
             )
 
             TAXONOMIC_STANDARDISATION(
-                TAXONOMIC_PROFILING.out.taxonomic_profiles,
-                tax_prof_gtdb_metadata,
-                ch_taxpasta_tax_dir
+                TAXONOMIC_PROFILING.out.profiles
             )
 
             ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
 
             ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
-            ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
+            ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
         }
     }
 
@@ -684,15 +682,8 @@ workflow MAG {
         )
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
-        ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
-            .collect()
-            .groupTuple()
-            .map { meta, results ->
-                [meta, results]
-            }
-
         SINGLEM_SUMMARISE(
-            ch_singlem_classify_results,
+            SINGLEM_CLASSIFY.out.singleM_output,
             "species",
         )
         ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
@@ -798,15 +789,8 @@ workflow MAG {
         )
         ch_versions = ch_versions.mix(SINGLEM_CLASSIFY.out.versions)
 
-        ch_singlem_classify_results = SINGLEM_CLASSIFY.out.singleM_output
-            .collect()
-            .groupTuple()
-            .map { meta, results ->
-                [meta, results]
-            }
-
         SINGLEM_SUMMARISE(
-            ch_singlem_classify_results,
+            SINGLEM_CLASSIFY.out.singleM_output,
             "species",
         )
         ch_versions = ch_versions.mix(SINGLEM_SUMMARISE.out.versions)
