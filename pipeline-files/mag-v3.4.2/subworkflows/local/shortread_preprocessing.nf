@@ -8,8 +8,8 @@ include { FASTP                                               } from '../../modu
 include { TRIMMOMATIC                                         } from '../../modules/nf-core/trimmomatic/main'
 include { ADAPTERREMOVAL as ADAPTERREMOVAL_PE                 } from '../../modules/nf-core/adapterremoval/main'
 include { ADAPTERREMOVAL as ADAPTERREMOVAL_SE                 } from '../../modules/nf-core/adapterremoval/main'
+include { HOSTILE_CLEAN                                       } from '../../modules/local/hostile'
 include { BOWTIE2_REMOVAL_BUILD as BOWTIE2_HOST_REMOVAL_BUILD } from '../../modules/local/bowtie2_removal_build'
-include { BOWTIE2_REMOVAL_ALIGN as BOWTIE2_HOST_REMOVAL_ALIGN } from '../../modules/local/bowtie2_removal_align'
 include { BOWTIE2_REMOVAL_BUILD as BOWTIE2_PHIX_REMOVAL_BUILD } from '../../modules/local/bowtie2_removal_build'
 include { BOWTIE2_REMOVAL_ALIGN as BOWTIE2_PHIX_REMOVAL_ALIGN } from '../../modules/local/bowtie2_removal_align'
 include { CAT_FASTQ                                           } from '../../modules/nf-core/cat/fastq/main'
@@ -89,8 +89,9 @@ workflow SHORTREAD_PREPROCESSING {
         ch_short_reads_prepped = ch_raw_short_reads
     }
 
-    if (params.host_fasta) {
+    if (params.host_fasta || params.host_genome) {
         if (params.host_fasta_bowtie2index) {
+            host_reference_dir = Channel.fromPath(file(params.host_fasta_bowtie2index))
             ch_host_bowtie2index = Channel.fromPath(file(params.host_fasta_bowtie2index, checkIfExists: true))
         }
         else {
@@ -100,18 +101,15 @@ workflow SHORTREAD_PREPROCESSING {
             ch_host_bowtie2index = BOWTIE2_HOST_REMOVAL_BUILD.out.index
         }
     }
-    else if (params.host_genome) {
-        ch_host_bowtie2index = ch_host_genome_index
-    }
 
     if (params.host_fasta || params.host_genome) {
-        BOWTIE2_HOST_REMOVAL_ALIGN(
+        HOSTILE_CLEAN(
             ch_short_reads_prepped,
-            ch_host_bowtie2index,
+            host_reference_dir,
         )
-        ch_short_reads_hostremoved = BOWTIE2_HOST_REMOVAL_ALIGN.out.reads
-        ch_versions = ch_versions.mix(BOWTIE2_HOST_REMOVAL_ALIGN.out.versions.first())
-        ch_multiqc_files = ch_multiqc_files.mix(BOWTIE2_HOST_REMOVAL_ALIGN.out.log)
+        ch_short_reads_hostremoved = HOSTILE_CLEAN.out.fastq
+        ch_versions = ch_versions.mix(HOSTILE_CLEAN.out.versions.first())
+        // ch_multiqc_files = ch_multiqc_files.mix(HOSTILE_CLEAN.out.log) TODO: add MultiQC report for hostile
     }
     else {
         ch_short_reads_hostremoved = ch_short_reads_prepped

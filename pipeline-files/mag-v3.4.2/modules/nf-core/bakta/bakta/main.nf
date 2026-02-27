@@ -1,6 +1,6 @@
 process BAKTA_BAKTA {
     tag "$meta.id"
-    label 'process_high'
+    label 'process_medium'
 
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -15,7 +15,7 @@ process BAKTA_BAKTA {
     path prodigal_tf
 
     output:
-    // tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
+    tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
     tuple val(meta), path("${prefix}.${out_type}.faa")              , emit: faa
     tuple val(meta), path("${prefix}.${out_type}.ffn")              , emit: ffn
     tuple val(meta), path("${prefix}.${out_type}.fna")              , emit: fna
@@ -38,15 +38,11 @@ process BAKTA_BAKTA {
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prod_tf = prodigal_tf ? "--prodigal-tf ${prodigal_tf[0]}" : ""
     """
-    mkdir ./temp
-
     bakta \\
         $fasta \\
         $args \\
-        --tmp-dir ./temp \\
         --threads $task.cpus \\
         --prefix $prefix \\
-        --output "${params.outdir}/Annotation/Bakta/${meta.id}/" \\
         $proteins_opt \\
         $prod_tf \\
         --db $db

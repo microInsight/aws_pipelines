@@ -22,24 +22,18 @@ process BAKTA_PLOT {
     def args = task.ext.args   ?: ''
     prefix   = task.ext.prefix ?: "${meta.id}"
     out_type = "${assembly_or_bins}" == "assembly" ? "genome" : "mag"
-    
+    plot_type = "${meta.bakta_plot}" == "COG" ? "cog" : "features"
+
     """
     mkdir ./temp
 
     bakta_plot \\
-        --type features \\
+        --type $plot_type \\
         $json \\
         $args \\
         --output "${params.outdir}/Annotation/Bakta/${meta.id}/Genome_Plot/Features/" \\
         --verbose
 
-    bakta_plot \\
-        --type cog \\
-        $json \\
-        $args \\
-        --output "${params.outdir}/Annotation/Bakta/${meta.id}/Genome_Plot/COG/" \\
-        --verbose
-    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         bakta: \$(echo \$(bakta_plot --version) 2>&1 | cut -f '2' -d ' ')

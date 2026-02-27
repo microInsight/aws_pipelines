@@ -99,6 +99,32 @@ workflow TAXONOMIC_PROFILING {
                 [meta + [tool: 'kraken2'], report]
             }
         )
+        ch_k2_results = KRAKEN2_TAXPROFILING.out.report
+
+        TAXPASTA_STANDARDISE_KRAKEN2(
+            ch_k2_results.map { meta, file ->
+                [meta + [classifier: "kraken2"] + [tool: "kraken2"], file]
+            },
+            'tsv',
+            ch_taxpasta_tax_dir,
+        )
+        ch_plot_reports = ch_plot_reports.mix(
+            TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.map { meta, report ->
+                [meta + [tool: "kraken2-taxpasta"], report]
+            }
+        )
+        ch_versions = ch_versions.mix(TAXPASTA_STANDARDISE_KRAKEN2.out.versions)
+
+        PLOT_KRAKEN2(
+            TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile
+                .filter { meta, _report ->
+                    meta.tool == 'kraken2'
+                },
+            "Kraken2, Taxpasta",
+            Channel.value(file(params.tax_prof_gtdb_metadata, checkIfExists: true)),
+            file("/mnt/workflow/definition/mag-v3.4.2/docs/images/mi_logo.png"),
+            file(params.tax_prof_template, checkIfExists: true),
+        )
 
         ch_bracken_input = KRAKEN2_TAXPROFILING.out.report.map { meta, report ->
             [meta + [tool: 'kraken2'], report]

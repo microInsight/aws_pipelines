@@ -235,15 +235,17 @@ workflow MAG {
                 ch_singlem_reads,
             )
 
-            TAXONOMIC_STANDARDISATION(
-                TAXONOMIC_PROFILING.out.profiles
-            )
-
             ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
 
+        // only activate if both Kraken2 and Centrifuger are ran - still needs tuning because merging profiles breaks
+        /*     TAXONOMIC_STANDARDISATION(
+                TAXONOMIC_PROFILING.out.profiles
+            )
             ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
+        */
+
         }
     }
 
@@ -577,14 +579,14 @@ workflow MAG {
             ? ch_input_for_postbinning_bins
             : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
 
-        ch_derepd_input_for_postbinning = ch_input_for_postbinning
-            .unique()
-            .groupTuple()
-            .map { key, bins ->
-                def new_bins = bins.flatten()
-                [key, new_bins.unique()]
+        SEQKIT_SEQ_LENGTH(ch_input_for_postbinning.map { meta, fa -> [meta, fa] })
+        ch_postbinning_long = SEQKIT_SEQ_LENGTH.out.fastx.map { meta, fasta ->
+            [meta + [category: 'bgc_length'], fasta ]
             }
-
+            .filter { meta, fasta ->
+                !fasta.isEmpty()
+            }
+        ch_versions = ch_versions.mix(SEQKIT_SEQ_LENGTH.out.versions)
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
         // read channel are not empty
@@ -595,7 +597,7 @@ workflow MAG {
             )
             .groupTuple(by: 0)
 
-        DEPTHS(ch_derepd_input_for_postbinning.unique(), BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
+        DEPTHS(ch_input_for_postbinning.unique(), BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -653,7 +655,7 @@ workflow MAG {
             ch_gtdbtk_summary = Channel.empty()
             if (gtdb) {
 
-                ch_gtdb_bins = ch_derepd_input_for_postbinning.filter { meta, _bins ->
+                ch_gtdb_bins = ch_input_for_postbinning.filter { meta, _bins ->
                     meta.domain != "eukarya"
                 }
 
@@ -700,9 +702,8 @@ workflow MAG {
         }
 
         // Prokka and/or Bakta annotation of bins and using the dereplicated bins for post-binning analyses to avoid name overlap errors.
-        if (!params.skip_prokka) {
-            ch_bins_for_prokka = ch_derepd_input_for_postbinning
-                .unique()
+        if (!params.skip_prokka && !params.run_bgc_screening) {
+            ch_bins_for_prokka = ch_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.baseName]
@@ -735,8 +736,7 @@ workflow MAG {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            ch_bins_for_bakta = ch_derepd_input_for_postbinning
-                .unique()
+            ch_bins_for_bakta = ch_postbinning_long
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.baseName]
@@ -750,11 +750,19 @@ workflow MAG {
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
-            BAKTA_PLOT(BAKTA_BAKTA.out.json, "bins")
+            ch_bakta_plot_cog = BAKTA_BAKTA.out.json.map { meta, json ->
+                [meta + [bakta_plot: "COG"], json]
+                }
+            ch_bakta_plot_feat = BAKTA_BAKTA.out.json.map { meta, json ->
+                [meta + [bakta_plot: "Features"], json]
+                }
+            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
+
+            BAKTA_PLOT(ch_bakta_plot, "bins")
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
-        if (params.run_bgc_screening) {
+       if (params.run_bgc_screening && params.skip_prokka) {
             bgc_input_fasta = BAKTA_BAKTA.out.faa
             bgc_input_gbk = BAKTA_BAKTA.out.gbff
 
@@ -782,8 +790,17 @@ workflow MAG {
 
     // annotation of assemblies and BGC detection on assemblies
     if (params.skip_binning) {
+        SEQKIT_SEQ_LENGTH(ch_assemblies.map { meta, fa -> [meta, fa] })
+        ch_assembly_long = SEQKIT_SEQ_LENGTH.out.fastx.map { meta, fasta ->
+            [meta + [category: 'bgc_length'], fasta ]
+            }
+            .filter { meta, fasta ->
+                !fasta.isEmpty()
+            }
+        ch_versions = ch_versions.mix(SEQKIT_SEQ_LENGTH.out.versions)
+
         SINGLEM_CLASSIFY(
-            ch_assemblies,
+            ch_assembly_long,
             file(params.singlem_metapkg),
             "fasta",
         )
@@ -799,9 +816,9 @@ workflow MAG {
         /*
         * Prokka: Genome annotation
         */
-        if (!params.skip_prokka) {
+        if (!params.skip_prokka && !params.run_bgc_screening) {
             PROKKA(
-                ch_assemblies,
+                ch_assembly_long,
                 [],
                 [],
             )
@@ -823,18 +840,32 @@ workflow MAG {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            BAKTA_BAKTA(ch_assemblies, "assembly", ch_bakta_db, [], [])
+            BAKTA_BAKTA(ch_assembly_long, "assembly", ch_bakta_db, [], [])
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
-            BAKTA_PLOT(BAKTA_BAKTA.out.json, "assembly")
+            ch_bakta_plot_cog = BAKTA_BAKTA.out.json.map { meta, json ->
+                [meta + [bakta_plot: "COG"], json]
+                }
+            ch_bakta_plot_feat = BAKTA_BAKTA.out.json.map { meta, json ->
+                [meta + [bakta_plot: "Features"], json]
+                }
+            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
+
+            BAKTA_PLOT(ch_bakta_plot, "assembly")
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
-        if (params.run_bgc_screening) {
+        if (params.run_bgc_screening && !params.skip_bakta) {
             bgc_input_fasta = BAKTA_BAKTA.out.faa
             bgc_input_gbk = BAKTA_BAKTA.out.gbff
+        }
+        else {
+            bgc_input_fasta = PYRODIGAL.out.faa
+            bgc_input_gbk = PYRODIGAL.out.annotations
+        }
 
+        if (params.run_bgc_screening) {
             BGC_DETECTION(
                 bgc_input_fasta,
                 bgc_input_gbk,
@@ -908,7 +939,7 @@ workflow MAG {
         ch_multiqc_files = ch_multiqc_files.mix(BINNING_PREPARATION.out.multiqc_files.collect().ifEmpty([]))
     }
 
-    if (!params.skip_binning && !params.skip_prokka) {
+    if (!params.skip_binning && !params.skip_prokka && !params.run_bgc_screening) {
         ch_multiqc_files = ch_multiqc_files.mix(PROKKA.out.txt.collect { it[1] }.ifEmpty([]))
     }
 
