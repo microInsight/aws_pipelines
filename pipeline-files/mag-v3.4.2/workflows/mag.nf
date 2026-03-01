@@ -331,9 +331,7 @@ workflow MAG {
         }
 
         // Assembly
-
         ch_assembled_contigs = Channel.empty()
-        ch_assemblies = Channel.empty()
 
         if (!params.single_end && !params.skip_spades) {
             METASPADES(ch_short_reads_spades.map { meta, reads -> [meta, reads, [], []] }, [], [])
@@ -409,7 +407,7 @@ workflow MAG {
     if (params.annotation_tool == 'pyrodigal') {
         PYRODIGAL(
             ch_assemblies,
-            "gff",
+            "gbk",
         )
 
         GUNZIP_PYRODIGAL_FAA(PYRODIGAL.out.faa)
@@ -424,7 +422,7 @@ workflow MAG {
     else {
         PRODIGAL(
             ch_assemblies,
-            'gff',
+            'gbk',
         )
         ch_versions = ch_versions.mix(PRODIGAL.out.versions)
     }
@@ -575,9 +573,15 @@ workflow MAG {
             ch_input_for_postbinning_unbins = ch_binning_results_bins.mix(ch_binning_results_unbins)
         }
 
-        ch_input_for_postbinning = params.exclude_unbins_from_postbinning
+        ch_input_for_postbinning_start = params.exclude_unbins_from_postbinning
             ? ch_input_for_postbinning_bins
             : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
+
+        ch_input_for_postbinning = ch_input_for_postbinning_start
+            .map { meta, bins ->
+                def files = bins.unique()
+                [meta, files]
+            }
 
         SEQKIT_SEQ_LENGTH(ch_input_for_postbinning.map { meta, fa -> [meta, fa] })
         ch_postbinning_long = SEQKIT_SEQ_LENGTH.out.fastx.map { meta, fasta ->
@@ -590,14 +594,15 @@ workflow MAG {
 
         // Combine short and long reads by meta.id and meta.group for DEPTHS, making sure that
         // read channel are not empty
+        /*
         ch_reads_for_depths = ch_short_reads
             .map { meta, reads -> [[id: meta.id, group: meta.group], [short_reads: reads, long_reads: []]] }
             .mix(
                 ch_long_reads.map { meta, reads -> [[id: meta.id, group: meta.group], [short_reads: [], long_reads: reads]] }
             )
             .groupTuple(by: 0)
-
-        DEPTHS(ch_input_for_postbinning.unique(), BINNING.out.metabat2depths.unique(), ch_reads_for_depths.unique())
+        */
+        DEPTHS(ch_input_for_postbinning, BINNING.out.metabat2depths, ch_short_reads)
         ch_versions = ch_versions.mix(DEPTHS.out.versions)
 
         ch_input_for_binsummary = DEPTHS.out.depths_summary
@@ -608,7 +613,7 @@ workflow MAG {
 
         ch_bin_qc_summary = Channel.empty()
         if (!params.skip_binqc) {
-            BIN_QC(ch_input_for_postbinning.unique())
+            BIN_QC(ch_input_for_postbinning)
 
             ch_bin_qc_summary = BIN_QC.out.qc_summary
             ch_versions = ch_versions.mix(BIN_QC.out.versions)
@@ -620,10 +625,10 @@ workflow MAG {
                 .groupTuple()
                 .map { meta, bins ->
                     def new_bins = bins.flatten()
-                    [meta, new_bins]
+                    [meta, new_bins.unique()]
                 }
 
-            QUAST_BINS(ch_input_for_quast_bins.unique())
+            QUAST_BINS(ch_input_for_quast_bins)
             ch_versions = ch_versions.mix(QUAST_BINS.out.versions)
             ch_quast_bin_summary = QUAST_BINS.out.quast_bin_summaries.collectFile(keepHeader: true) { meta, summary ->
                 ["${meta.id}.tsv", summary]
@@ -702,15 +707,15 @@ workflow MAG {
         }
 
         // Prokka and/or Bakta annotation of bins and using the dereplicated bins for post-binning analyses to avoid name overlap errors.
-        if (!params.skip_prokka && !params.run_bgc_screening) {
+        if (!params.skip_prokka) {
             ch_bins_for_prokka = ch_input_for_postbinning
                 .transpose()
                 .map { meta, bin ->
                     def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
                 }
-                .filter { meta, _bin ->
-                    meta.domain != "eukarya"
+                .filter { meta, bin ->
+                    meta.domain != "eukarya" && !bin.isEmpty()
                 }
 
             PROKKA(
@@ -742,8 +747,8 @@ workflow MAG {
                     def meta_new = meta + [id: bin.baseName]
                     [meta_new, bin]
                 }
-                .filter { meta, _bin ->
-                    meta.domain != "eukarya"
+                .filter { meta, bin ->
+                    meta.domain != "eukarya" && !bin.isEmpty()
                 }
 
             BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
@@ -762,15 +767,20 @@ workflow MAG {
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
-       if (params.run_bgc_screening && params.skip_prokka) {
+        if ( params.run_bgc_screening && !params.skip_bakta ) {
             bgc_input_fasta = BAKTA_BAKTA.out.faa
-            bgc_input_gbk = BAKTA_BAKTA.out.gbff
-
-            BGC_DETECTION(
-                bgc_input_fasta,
-                bgc_input_gbk,
-            )
+            bgc_input_gbk   = BAKTA_BAKTA.out.gbff
         }
+        else if ( params.run_bgc_screening && !params.skip_prokka ) {
+            bgc_input_fasta = PROKKA.out.faa
+            bgc_input_gbk   = PROKKA.out.gbk
+        }
+        else {
+            bgc_input_fasta = Channel.empty()
+            bgc_input_gbk   = Channel.empty()
+        }
+
+        BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
             ch_bins_for_metaeuk = ch_input_for_postbinning
@@ -816,9 +826,13 @@ workflow MAG {
         /*
         * Prokka: Genome annotation
         */
-        if (!params.skip_prokka && !params.run_bgc_screening) {
+        if (!params.skip_prokka) {
+            ch_anno_assemblies = ch_assembly_long.filter {meta, assembly ->
+                !assembly.isEmpty()
+            }
+
             PROKKA(
-                ch_assembly_long,
+                ch_anno_assemblies,
                 [],
                 [],
             )
@@ -840,7 +854,11 @@ workflow MAG {
                 ch_bakta_db = Channel.fromPath(file(params.annotation_bakta_db, checkIfExists: true))
             }
 
-            BAKTA_BAKTA(ch_assembly_long, "assembly", ch_bakta_db, [], [])
+            ch_anno_assemblies = ch_assembly_long.filter {meta, assembly ->
+                !assembly.isEmpty()
+            }
+
+            BAKTA_BAKTA(ch_anno_assemblies, "assembly", ch_bakta_db, [], [])
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
@@ -856,21 +874,22 @@ workflow MAG {
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
-        if (params.run_bgc_screening && !params.skip_bakta) {
+        if ( params.run_bgc_screening && !params.skip_bakta ) {
             bgc_input_fasta = BAKTA_BAKTA.out.faa
-            bgc_input_gbk = BAKTA_BAKTA.out.gbff
+            bgc_input_gbk   = BAKTA_BAKTA.out.gbff
+        }
+        else if ( params.run_bgc_screening && !params.skip_prokka ) {
+            bgc_input_fasta = PROKKA.out.faa
+            bgc_input_gbk   = PROKKA.out.gbk
         }
         else {
-            bgc_input_fasta = PYRODIGAL.out.faa
-            bgc_input_gbk = PYRODIGAL.out.annotations
+            // ensure the variables exist; an empty channel won’t emit anything
+            bgc_input_fasta = Channel.empty()
+            bgc_input_gbk   = Channel.empty()
         }
 
-        if (params.run_bgc_screening) {
-            BGC_DETECTION(
-                bgc_input_fasta,
-                bgc_input_gbk,
-            )
-        }
+        BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
+
     }
 
     //

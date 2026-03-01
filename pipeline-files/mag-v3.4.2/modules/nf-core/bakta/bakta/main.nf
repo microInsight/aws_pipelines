@@ -5,7 +5,7 @@ process BAKTA_BAKTA {
     conda "${moduleDir}/environment.yml"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/bakta:1.10.4--pyhdfd78af_0' :
-        'biocontainers/bakta:1.10.4--pyhdfd78af_0' }"
+        'biocontainers/bakta:1.12.0--pyhdfd78af_0' }"
 
     input:
     tuple val(meta), path(fasta)
@@ -15,18 +15,18 @@ process BAKTA_BAKTA {
     path prodigal_tf
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.embl")             , emit: embl
-    tuple val(meta), path("${prefix}.${out_type}.faa")              , emit: faa
-    tuple val(meta), path("${prefix}.${out_type}.ffn")              , emit: ffn
-    tuple val(meta), path("${prefix}.${out_type}.fna")              , emit: fna
-    tuple val(meta), path("${prefix}.${out_type}.gbff")             , emit: gbff
-    tuple val(meta), path("${prefix}.${out_type}.gff3")             , emit: gff
-    tuple val(meta), path("${prefix}.${out_type}.hypotheticals.tsv"), emit: hypotheticals_tsv
-    tuple val(meta), path("${prefix}.${out_type}.hypotheticals.faa"), emit: hypotheticals_faa
-    tuple val(meta), path("${prefix}.${out_type}.tsv")              , emit: tsv
-    tuple val(meta), path("${prefix}.${out_type}.txt")              , emit: txt
-    tuple val(meta), path("${prefix}.${out_type}.json")             , emit: json
-    path "versions.yml"                                             , emit: versions
+    tuple val(meta), path("${prefix}.embl")             , emit: embl
+    tuple val(meta), path("${prefix}.faa")              , emit: faa
+    tuple val(meta), path("${prefix}.ffn")              , emit: ffn
+    tuple val(meta), path("${prefix}.fna")              , emit: fna
+    tuple val(meta), path("${prefix}.gbff")             , emit: gbff
+    tuple val(meta), path("${prefix}.gff3")             , emit: gff
+    tuple val(meta), path("${prefix}.hypotheticals.tsv"), emit: hypotheticals_tsv
+    tuple val(meta), path("${prefix}.hypotheticals.faa"), emit: hypotheticals_faa
+    tuple val(meta), path("${prefix}.tsv")              , emit: tsv
+    tuple val(meta), path("${prefix}.txt")              , emit: txt
+    tuple val(meta), path("${prefix}.json")             , emit: json
+    path "versions.yml"                                 , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -38,14 +38,19 @@ process BAKTA_BAKTA {
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prod_tf = prodigal_tf ? "--prodigal-tf ${prodigal_tf[0]}" : ""
     """
+    mkdir ./temp_dir
+
     bakta \\
         $fasta \\
         $args \\
         --threads $task.cpus \\
         --prefix $prefix \\
+        --db $db \\
+        --tmp ./temp_dir \\
         $proteins_opt \\
         $prod_tf \\
-        --db $db
+        --force \\
+        --verbose
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
