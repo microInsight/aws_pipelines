@@ -579,10 +579,9 @@ workflow MAG {
             : ch_input_for_postbinning_bins.mix(ch_input_for_postbinning_unbins)
 
         ch_input_for_postbinning = ch_input_for_postbinning_start
-            .map { meta, bins ->
-                def unique_bins = bins.unique { bins.baseName }
-                [meta, unique_bins]
-            }
+            .transpose()
+            .unique()
+            .groupTuple()
 
         SEQKIT_SEQ_LENGTH(ch_input_for_postbinning.map { meta, fa -> [meta, fa] })
         ch_postbinning_long = SEQKIT_SEQ_LENGTH.out.fastx.map { meta, fasta ->

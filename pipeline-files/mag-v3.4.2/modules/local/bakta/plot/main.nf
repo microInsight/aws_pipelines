@@ -13,7 +13,8 @@ process BAKTA_PLOT {
     val bakta_plot
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.{png,svg}") , emit: plot
+    tuple val(meta), path("${prefix}.${out_type}.png")       , emit: png
+    tuple val(meta), path("${prefix}.${out_type}.svg")       , emit: svg
     path "versions.yml"                                      , emit: versions
 
     when:
@@ -26,15 +27,15 @@ process BAKTA_PLOT {
     plot_type = "${meta.bakta_plot}" == "COG" ? "cog" : "features"
 
     """
-    mkdir ./temp
+    chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/bakta_plot.py
 
-    bakta_plot \\
+    python3 /mnt/workflow/definition/mag-v3.4.2/bin/bakta_plot.py \\
         --type $plot_type \\
         $json \\
         $args \\
-        --verbose
-        --tmp-dir ./temp
+        --verbose \\
         --force
+
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
