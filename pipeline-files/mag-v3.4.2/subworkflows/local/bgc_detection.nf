@@ -96,10 +96,10 @@ workflow BGC_DETECTION {
         ch_combgc_summaries = COMBGC.out.tsv
             .collectFile(name: 'combgc_complete_summary.tsv', tempDir: "${params.outdir}/Reports/COMBGC", keepHeader: true)
     }
-    else {
+    else { */
         ch_combgc_summaries = COMBGC.out.tsv
             .collectFile(name: 'combgc_complete_summary.tsv', keepHeader: true)
-    } */
+    //}
 
     /* // MERGE_TAXONOMY TODO: Re-enable after we change taxonomy output from MMSeqs2 to either Kraken2 SingleM or GTDB-tk.
     if (params.run_taxa_classification) {

@@ -10,6 +10,7 @@ process BAKTA_PLOT {
     input:
     tuple val(meta), path(json)
     val assembly_or_bins
+    val bakta_plot
 
     output:
     tuple val(meta), path("${prefix}.${out_type}.{png,svg}") , emit: plot
@@ -20,7 +21,7 @@ process BAKTA_PLOT {
 
     script:
     def args = task.ext.args   ?: ''
-    prefix   = task.ext.prefix ?: "${meta.id}"
+    prefix   = task.ext.prefix ?: "${meta.id}_${bakta_plot}"
     out_type = "${assembly_or_bins}" == "assembly" ? "genome" : "mag"
     plot_type = "${meta.bakta_plot}" == "COG" ? "cog" : "features"
 
@@ -31,8 +32,10 @@ process BAKTA_PLOT {
         --type $plot_type \\
         $json \\
         $args \\
-        --output "${params.outdir}/Annotation/Bakta/${meta.id}/Genome_Plot/Features/" \\
+        --output "${params.outdir}/Annotation/Bakta/${meta.id}/Genome_Plot/Features/$plot_type/" \\
         --verbose
+        --tmp ./temp
+        --force
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

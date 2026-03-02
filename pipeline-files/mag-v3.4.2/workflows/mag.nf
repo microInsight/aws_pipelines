@@ -579,8 +579,9 @@ workflow MAG {
 
         ch_input_for_postbinning = ch_input_for_postbinning_start
             .map { meta, bins ->
-                def files = bins.unique()
-                [meta, files]
+                def flat_bins = bins.flatten()
+                def unique_bins = flat_bins.unique { it.baseName }
+                [meta, unique_bins]
             }
 
         SEQKIT_SEQ_LENGTH(ch_input_for_postbinning.map { meta, fa -> [meta, fa] })
@@ -763,7 +764,8 @@ workflow MAG {
                 }
             ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
 
-            BAKTA_PLOT(ch_bakta_plot, "bins")
+            BAKTA_PLOT(ch_bakta_plot, "bins", "Features")
+            BAKTA_PLOT(ch_bakta_plot, "bins", "COG")
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 
@@ -870,7 +872,8 @@ workflow MAG {
                 }
             ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
 
-            BAKTA_PLOT(ch_bakta_plot, "assembly")
+            BAKTA_PLOT(ch_bakta_plot, "assembly", "COG")
+            BAKTA_PLOT(ch_bakta_plot, "assembly", "Features")
             ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
         }
 

@@ -33,7 +33,7 @@ process BAKTA_BAKTA {
 
     script:
     def args = task.ext.args   ?: ''
-    prefix   = task.ext.prefix ?: "${meta.id}"
+    prefix   = task.ext.prefix ?: "${meta.id}_${assembly_or_bins}"
     out_type = "${assembly_or_bins}" == "assembly" ? "genome" : "mag"
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prod_tf = prodigal_tf ? "--prodigal-tf ${prodigal_tf[0]}" : ""
