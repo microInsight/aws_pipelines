@@ -65,7 +65,8 @@ include { CAT                                          } from '../modules/local/
 include { CAT_SUMMARY                                  } from '../modules/local/cat_summary'
 include { BIN_SUMMARY                                  } from '../modules/local/bin_summary'
 include { COMBINE_TSV as COMBINE_SUMMARY_TSV           } from '../modules/local/combine_tsv'
-include { BAKTA_PLOT                                   } from '../modules/local/bakta/plot/main'
+include { BAKTA_PLOT as BAKTA_PLOT_COG                 } from '../modules/local/bakta/plot/main'
+include { BAKTA_PLOT as BAKTA_PLOT_FEATURES            } from '../modules/local/bakta/plot/main'
 include { SINGLEM_CLASSIFY                             } from '../modules/local/singleM_classify'
 include { SINGLEM_SUMMARISE                            } from '../modules/local/singleM_summarise.nf'
 
@@ -764,9 +765,10 @@ workflow MAG {
                 }
             ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
 
-            BAKTA_PLOT(ch_bakta_plot, "bins", "Features")
-            BAKTA_PLOT(ch_bakta_plot, "bins", "COG")
-            ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
+            BAKTA_PLOT_FEATURES(ch_bakta_plot, "bins", "Features")
+            BAKTA_PLOT_COG(ch_bakta_plot, "bins", "COG")
+            ch_versions = ch_versions.mix(BAKTA_PLOT_COG.out.versions)
+            ch_versions = ch_versions.mix(BAKTA_PLOT_FEATURES.out.versions)
         }
 
         if ( params.run_bgc_screening && !params.skip_bakta ) {
@@ -872,9 +874,10 @@ workflow MAG {
                 }
             ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
 
-            BAKTA_PLOT(ch_bakta_plot, "assembly", "COG")
-            BAKTA_PLOT(ch_bakta_plot, "assembly", "Features")
-            ch_versions = ch_versions.mix(BAKTA_PLOT.out.versions)
+            BAKTA_PLOT_COG(ch_bakta_plot, "assembly", "COG")
+            BAKTA_PLOT_FEATURES(ch_bakta_plot, "assembly", "Features")
+            ch_versions = ch_versions.mix(BAKTA_PLOT_COG.out.versions)
+            ch_versions = ch_versions.mix(BAKTA_PLOT_FEATURES.out.versions)
         }
 
         if ( params.run_bgc_screening && !params.skip_bakta ) {
