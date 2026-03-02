@@ -580,8 +580,7 @@ workflow MAG {
 
         ch_input_for_postbinning = ch_input_for_postbinning_start
             .map { meta, bins ->
-                def flat_bins = bins.flatten()
-                def unique_bins = flat_bins.unique { it.baseName }
+                def unique_bins = bins.unique { bins.baseName }
                 [meta, unique_bins]
             }
 
@@ -772,16 +771,42 @@ workflow MAG {
         }
 
         if ( params.run_bgc_screening && !params.skip_bakta ) {
-            bgc_input_fasta = BAKTA_BAKTA.out.faa
-            bgc_input_gbk   = BAKTA_BAKTA.out.gbff
+            bgc_bakta_input_fasta = BAKTA_BAKTA.out.faa.map { meta, faa ->
+                [meta + [annotator: "Bakta"], faa]
+            }
+            bgc_bakta_input_gbk   = BAKTA_BAKTA.out.gbff.map { meta, gbff ->
+                [meta + [annotator: "Bakta"], gbff]
+            }
+
+            bgc_prokka_input_fasta = Channel.empty()
+            bgc_prokka_input_gbk   = Channel.empty()
+
+            bgc_input_fasta = bgc_bakta_input_fasta.mix(bgc_prokka_input_fasta)
+            bgc_input_gbk = bgc_bakta_input_gbk.mix(bgc_prokka_input_gbk)
+
         }
         else if ( params.run_bgc_screening && !params.skip_prokka ) {
-            bgc_input_fasta = PROKKA.out.faa
-            bgc_input_gbk   = PROKKA.out.gbk
+            bgc_prokka_input_fasta = PROKKA.out.faa.map { meta, faa ->
+                [meta + [annotator: "Prokka"], faa]
+            }
+            bgc_prokka_input_gbk   = PROKKA.out.gbk.map { meta, gbk ->
+                [meta + [annotator: "Prokka"], gbk]
+            }
+
+            bgc_bakta_input_fasta = Channel.empty()
+            bgc_bakta_input_gbk   = Channel.empty()
+
+            bgc_input_fasta = bgc_prokka_input_fasta.mix(bgc_bakta_input_fasta)
+            bgc_input_gbk = bgc_prokka_input_gbk.mix(bgc_bakta_input_gbk)
+
         }
         else {
-            bgc_input_fasta = Channel.empty()
-            bgc_input_gbk   = Channel.empty()
+            bgc_input_fasta = PYRODIGAL.out.faa.map { meta, faa ->
+                [meta + [annotator: "Pyrodigal"], faa]
+            }
+            bgc_input_gbk   = PYRODIGAL.out.annotations.map { meta, gbk ->
+                [meta + [annotator: "Pyrodigal"], gbk]
+            }
         }
 
         BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
@@ -881,17 +906,42 @@ workflow MAG {
         }
 
         if ( params.run_bgc_screening && !params.skip_bakta ) {
-            bgc_input_fasta = BAKTA_BAKTA.out.faa
-            bgc_input_gbk   = BAKTA_BAKTA.out.gbff
+            bgc_bakta_input_fasta = BAKTA_BAKTA.out.faa.map { meta, faa ->
+                [meta + [annotator: "Bakta"], faa]
+            }
+            bgc_bakta_input_gbk   = BAKTA_BAKTA.out.gbff.map { meta, gbff ->
+                [meta + [annotator: "Bakta"], gbff]
+            }
+
+            bgc_prokka_input_fasta = Channel.empty()
+            bgc_prokka_input_gbk   = Channel.empty()
+
+            bgc_input_fasta = bgc_bakta_input_fasta.mix(bgc_prokka_input_fasta)
+            bgc_input_gbk = bgc_bakta_input_gbk.mix(bgc_prokka_input_gbk)
+
         }
         else if ( params.run_bgc_screening && !params.skip_prokka ) {
-            bgc_input_fasta = PROKKA.out.faa
-            bgc_input_gbk   = PROKKA.out.gbk
+            bgc_prokka_input_fasta = PROKKA.out.faa.map { meta, faa ->
+                [meta + [annotator: "Prokka"], faa]
+            }
+            bgc_prokka_input_gbk   = PROKKA.out.gbk.map { meta, gbk ->
+                [meta + [annotator: "Prokka"], gbk]
+            }
+
+            bgc_bakta_input_fasta = Channel.empty()
+            bgc_bakta_input_gbk   = Channel.empty()
+
+            bgc_input_fasta = bgc_prokka_input_fasta.mix(bgc_bakta_input_fasta)
+            bgc_input_gbk = bgc_prokka_input_gbk.mix(bgc_bakta_input_gbk)
+
         }
         else {
-            // ensure the variables exist; an empty channel won’t emit anything
-            bgc_input_fasta = Channel.empty()
-            bgc_input_gbk   = Channel.empty()
+            bgc_input_fasta = PYRODIGAL.out.faa.map { meta, faa ->
+                [meta + [annotator: "Pyrodigal"], faa]
+            }
+            bgc_input_gbk   = PYRODIGAL.out.annotations.map { meta, gbk ->
+                [meta + [annotator: "Pyrodigal"], gbk]
+            }
         }
 
         BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
@@ -964,7 +1014,7 @@ workflow MAG {
         ch_multiqc_files = ch_multiqc_files.mix(BINNING_PREPARATION.out.multiqc_files.collect().ifEmpty([]))
     }
 
-    if (!params.skip_binning && !params.skip_prokka && !params.run_bgc_screening) {
+    if (!params.skip_binning && !params.skip_prokka) {
         ch_multiqc_files = ch_multiqc_files.mix(PROKKA.out.txt.collect { it[1] }.ifEmpty([]))
     }
 

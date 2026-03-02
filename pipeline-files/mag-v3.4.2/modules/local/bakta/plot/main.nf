@@ -32,9 +32,8 @@ process BAKTA_PLOT {
         --type $plot_type \\
         $json \\
         $args \\
-        --output "${params.outdir}/Annotation/Bakta/${meta.id}/Genome_Plot/Features/$plot_type/" \\
         --verbose
-        --tmp ./temp
+        --tmp-dir ./temp
         --force
 
     cat <<-END_VERSIONS > versions.yml

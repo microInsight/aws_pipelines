@@ -1,5 +1,6 @@
 process BOWTIE2_ASSEMBLY_ALIGN {
     tag "${assembly_meta.assembler}-${assembly_meta.id}-${reads_meta.id}"
+    label 'process_medium'
 
     conda "bioconda::bowtie2=2.4.2 bioconda::samtools=1.11 conda-forge::pigz=2.3.4"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?

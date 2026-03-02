@@ -21,7 +21,7 @@ workflow BGC_DETECTION {
     ch_bgcresults_for_combgc = Channel.empty()
 
     // ANTISMASH
-    if (!params.bgc_skip_antismash && params.skip_prokka) {
+    if (!params.bgc_skip_antismash && !params.skip_bakta) {
         // Do not run antiSMASH using Prokka output - only use Pyrodigal or Bakta output files (see nf-core/funcscan usage notes on website).
         if (params.bgc_antismash_db && params.bgc_antismash_db.endsWith(".gz")) {
             UNTAR([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
@@ -31,7 +31,11 @@ workflow BGC_DETECTION {
             ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true))
         }
 
-        ANTISMASH_ANTISMASH(gbks, ch_antismash_databases, [])
+        ch_antismash_gbks = gbks.filter{ meta, gbk ->
+            meta.annotator != "Prokka"
+        }
+
+        ANTISMASH_ANTISMASH(ch_antismash_gbks, ch_antismash_databases, [])
 
         ch_versions = ch_versions.mix(ANTISMASH_ANTISMASH.out.versions)
         ch_antismashresults = ANTISMASH_ANTISMASH.out.knownclusterblast_dir

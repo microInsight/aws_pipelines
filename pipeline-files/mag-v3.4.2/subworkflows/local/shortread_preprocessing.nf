@@ -12,6 +12,7 @@ include { HOSTILE_CLEAN                                       } from '../../modu
 include { BOWTIE2_REMOVAL_BUILD as BOWTIE2_HOST_REMOVAL_BUILD } from '../../modules/local/bowtie2_removal_build'
 include { BOWTIE2_REMOVAL_BUILD as BOWTIE2_PHIX_REMOVAL_BUILD } from '../../modules/local/bowtie2_removal_build'
 include { BOWTIE2_REMOVAL_ALIGN as BOWTIE2_PHIX_REMOVAL_ALIGN } from '../../modules/local/bowtie2_removal_align'
+include { BOWTIE2_REMOVAL_ALIGN as BOWTIE2_HOST_REMOVAL_ALIGN } from '../../modules/local/bowtie2_removal_align'
 include { CAT_FASTQ                                           } from '../../modules/nf-core/cat/fastq/main'
 include { SEQTK_MERGEPE                                       } from '../../modules/nf-core/seqtk/mergepe/main'
 include { BBMAP_BBNORM                                        } from '../../modules/nf-core/bbmap/bbnorm/main'
@@ -20,7 +21,7 @@ workflow SHORTREAD_PREPROCESSING {
     take:
     ch_raw_short_reads   // [ [meta] , fastq1, fastq2] (mandatory)
     ch_host_fasta        // [fasta] (optional)
-    ch_host_genome_index // fasta (optional)
+    ch_host_genome_index // fasta (optional) unused currently since HealthOmics has no internet connection to pull igenomes data
     ch_phix_db_file      // [fasta] (optional)
 
     main:
@@ -103,13 +104,24 @@ workflow SHORTREAD_PREPROCESSING {
     }
 
     if (params.host_fasta || params.host_genome) {
+        /* BOWTIE2_HOST_REMOVAL_ALIGN(
+            ch_short_reads_prepped,
+            host_reference_dir
+        )
+
+        ch_versions = ch_versions.mix(BOWTIE2_HOST_REMOVAL_ALIGN.out.versions)
+
+        ch_short_reads_hostremoved = BOWTIE2_HOST_REMOVAL_ALIGN.out.reads
+        ch_multiqc_files = ch_multiqc_files.mix(BOWTIE2_HOST_REMOVAL_ALIGN.out.log) */
+
+        // TODO: add MultiQC report for hostile
         HOSTILE_CLEAN(
             ch_short_reads_prepped,
             host_reference_dir,
         )
         ch_short_reads_hostremoved = HOSTILE_CLEAN.out.fastq
         ch_versions = ch_versions.mix(HOSTILE_CLEAN.out.versions.first())
-        // ch_multiqc_files = ch_multiqc_files.mix(HOSTILE_CLEAN.out.log) TODO: add MultiQC report for hostile
+        // ch_multiqc_files = ch_multiqc_files.mix(HOSTILE_CLEAN.out.log)
     }
     else {
         ch_short_reads_hostremoved = ch_short_reads_prepped
@@ -161,8 +173,8 @@ workflow SHORTREAD_PREPROCESSING {
     }
 
     // Combine single run and multi-run-merged data
-    ch_short_reads = Channel.empty()
-    ch_short_reads = CAT_FASTQ.out.reads.mix(ch_short_reads_catskipped)
+    ch_short_reads_out = Channel.empty()
+    ch_short_reads_out = CAT_FASTQ.out.reads.mix(ch_short_reads_catskipped)
     ch_versions = ch_versions.mix(CAT_FASTQ.out.versions.first())
 
     if (params.bbnorm) {
@@ -171,29 +183,29 @@ workflow SHORTREAD_PREPROCESSING {
             // for dropping the single_end parameter, but keeps assembly modules as they are, i.e. not
             // accepting a mix of single end and pairs.
             SEQTK_MERGEPE(
-                ch_short_reads.filter { !it[0].single_end }
+                ch_short_reads_out.filter { !it[0].single_end }
             )
             ch_versions = ch_versions.mix(SEQTK_MERGEPE.out.versions.first())
             // Combine the interleaved pairs with any single end libraries. Set the meta.single_end to true (used by the bbnorm module).
             ch_bbnorm = SEQTK_MERGEPE.out.reads
-                .mix(ch_short_reads.filter { it[0].single_end })
+                .mix(ch_short_reads_out.filter { it[0].single_end })
                 .map { [[id: "group${it[0].group}", group: it[0].group, single_end: true], it[1]] }
                 .groupTuple()
         }
         else {
-            ch_bbnorm = ch_short_reads
+            ch_bbnorm = ch_short_reads_out
         }
         BBMAP_BBNORM(ch_bbnorm)
         ch_versions = ch_versions.mix(BBMAP_BBNORM.out.versions)
         ch_short_reads_assembly = BBMAP_BBNORM.out.fastq
     }
     else {
-        ch_short_reads_assembly = ch_short_reads
+        ch_short_reads_assembly = ch_short_reads_out
     }
 
     emit:
-    short_reads          = ch_short_reads
-    singlem_short_reads  = ch_short_reads_prepped
+    short_reads          = ch_short_reads_out
+    singlem_short_reads  = ch_short_reads_phixremoved
     short_reads_assembly = ch_short_reads_assembly
     versions             = ch_versions
     multiqc_files        = ch_multiqc_files
