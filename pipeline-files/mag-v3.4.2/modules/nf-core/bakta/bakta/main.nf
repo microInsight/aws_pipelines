@@ -26,19 +26,19 @@ process BAKTA_BAKTA {
     tuple val(meta), path("${prefix}.tsv")              , emit: tsv
     tuple val(meta), path("${prefix}.txt")              , emit: txt
     tuple val(meta), path("${prefix}.json")             , emit: json
-    path "versions.yml"                                 , emit: versions
+    path "versions.yml"                                             , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args   ?: ''
-    prefix   = task.ext.prefix ?: "${meta.id}_${assembly_or_bins}"
+    prefix   = task.ext.prefix ?: "${meta.id}_bakta"
     out_type = "${assembly_or_bins}" == "assembly" ? "genome" : "mag"
     def proteins_opt = proteins ? "--proteins ${proteins[0]}" : ""
     def prod_tf = prodigal_tf ? "--prodigal-tf ${prodigal_tf[0]}" : ""
     """
-    mkdir ./temp_dir
+    mkdir ./temp
 
     bakta \\
         $fasta \\
@@ -46,11 +46,11 @@ process BAKTA_BAKTA {
         --threads $task.cpus \\
         --prefix $prefix \\
         --db $db \\
-        --tmp ./temp_dir \\
-        $proteins_opt \\
-        $prod_tf \\
+        --tmp-dir ./temp \\
         --force \\
-        --skip-plot
+        $proteins_opt \\
+        $prod_tf
+        
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

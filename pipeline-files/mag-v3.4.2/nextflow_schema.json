@@ -340,8 +340,8 @@
                 },
                 "skip_host_removal": {
                     "type": "boolean",
-                    "help_text": "Should host read removal be skipped? Default true since process only performs on 1 sample. Skip until bug fixed.",
-                    "description": "Skip host read removal? Default is true."
+                    "help_text": "Should host read removal be skipped? Default false so that host reads are removed.",
+                    "description": "Skip host read removal? Default is false."
                 },
                 "host_genome": {
                     "type": "string",

@@ -25,7 +25,7 @@ process GECCO_RUN {
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
+    def prefix = task.ext.prefix ?: "${meta.assembler}_${meta.annotator}_${meta.id}"
     def custom_model = model_dir ? "--model ${model_dir}" : ""
     def custom_hmm = hmm ? "--hmm ${hmm}" : ""
     """

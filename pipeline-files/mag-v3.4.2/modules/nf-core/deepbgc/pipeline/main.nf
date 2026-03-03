@@ -30,7 +30,7 @@ process DEEPBGC_PIPELINE {
 
     script:
     def args = task.ext.args ?: ''
-    prefix = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.assembler}_${meta.annotator}_${meta.id}"
     """
     export DEEPBGC_DOWNLOADS_DIR=${db}
 

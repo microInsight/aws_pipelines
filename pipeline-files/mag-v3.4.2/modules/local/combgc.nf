@@ -18,7 +18,7 @@ process COMBGC {
     task.ext.when == null || task.ext.when
 
     script: // This script is bundled with the pipeline, in nf-core/funcscan/bin/
-    prefix = task.ext.prefix ?: "${meta.id}"
+    prefix = task.ext.prefix ?: "${meta.assembler}_${meta.annotator}_${meta.id}"
     """
     chmod +x /mnt/workflow/definition/mag-v3.4.2/bin/comBGC.py
 

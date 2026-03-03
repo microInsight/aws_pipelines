@@ -92,14 +92,15 @@ workflow SHORTREAD_PREPROCESSING {
 
     if (params.host_fasta || params.host_genome) {
         if (params.host_fasta_bowtie2index) {
-            host_reference_dir = Channel.fromPath(file(params.host_fasta_bowtie2index))
-            ch_host_bowtie2index = Channel.fromPath(file(params.host_fasta_bowtie2index, checkIfExists: true))
+            host_reference_dir = Channel.fromPath(file(params.host_fasta_bowtie2index, checkIfExists: true)).first()
+            ch_host_bowtie2index = Channel.fromPath(file(params.host_fasta_bowtie2index, checkIfExists: true)).first()
         }
         else {
             BOWTIE2_HOST_REMOVAL_BUILD(
                 ch_host_fasta
             )
             ch_host_bowtie2index = BOWTIE2_HOST_REMOVAL_BUILD.out.index
+            host_reference_dir = BOWTIE2_HOST_REMOVAL_BUILD.out.index
         }
     }
 

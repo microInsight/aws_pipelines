@@ -49,6 +49,7 @@ include { METAEUK_EASYPREDICT                          } from '../modules/nf-cor
 include { UNTAR                                        } from '../modules/nf-core/untar/main'
 include { BAKTA_BAKTA                                  } from '../modules/nf-core/bakta/bakta/main'
 include { SEQKIT_SEQ as SEQKIT_SEQ_LENGTH              } from '../modules/nf-core/seqkit/seq/main'
+include { UNICYCLER                                    } from '../modules/nf-core/unicycler/main'
 
 //
 // MODULE: Local to the pipeline
@@ -361,6 +362,16 @@ workflow MAG {
             ch_versions = ch_versions.mix(METASPADESHYBRID.out.versions)
         }
 
+        if (!params.skip_unicycler) {
+            UNICYCLER(ch_short_reads_grouped)
+            ch_uniycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
+                def meta_new = meta + [assembler: 'UNICYCLER']
+                [meta_new, assembly]
+            }
+            ch_assembled_contigs = ch_assembled_contigs.mix(ch_uniycler_assemblies)
+            ch_versions = ch_versions.mix(METASPADES.out.versions)
+        }
+
         if (!params.skip_megahit) {
             MEGAHIT(ch_short_reads_grouped)
             ch_megahit_assemblies = MEGAHIT.out.contigs.map { meta, assembly ->
@@ -375,7 +386,7 @@ workflow MAG {
         ch_versions = ch_versions.mix(GUNZIP_ASSEMBLIES.out.versions)
 
         ch_assemblies = GUNZIP_ASSEMBLIES.out.gunzip
-        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT'] }
+        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT', 'UNICYCLER'] }
         ch_longread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['FLYE', 'METAMDBG'] }
     }
     else {
@@ -390,7 +401,7 @@ workflow MAG {
         ch_versions = ch_versions.mix(GUNZIP_ASSEMBLYINPUT.out.versions)
 
         ch_assemblies = ch_assemblies.mix(ch_assemblies_split.ungzip, GUNZIP_ASSEMBLYINPUT.out.gunzip)
-        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT'] }
+        ch_shortread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['SPADES', 'SPADESHYBRID', 'MEGAHIT', 'UNICYCLER'] }
         ch_longread_assemblies = ch_assemblies.filter { meta, _contigs -> meta.assembler.toUpperCase() in ['FLYE', 'METAMDBG'] }
     }
 
@@ -751,10 +762,12 @@ workflow MAG {
                     meta.domain != "eukarya" && !bin.isEmpty()
                 }
 
-            BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db, [], [])
+            BAKTA_BAKTA(ch_bins_for_bakta, "bins", ch_bakta_db.first(), [], [])
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
+            // for some reason Bakta refuses to save circular plots correctly even after trying to
+            // use the exact plot.py script from the GitHub repo - will have to add this into report manually?
             ch_bakta_plot_cog = BAKTA_BAKTA.out.json.map { meta, json ->
                 [meta + [bakta_plot: "COG"], json]
                 }
@@ -886,7 +899,7 @@ workflow MAG {
                 !assembly.isEmpty()
             }
 
-            BAKTA_BAKTA(ch_anno_assemblies, "assembly", ch_bakta_db, [], [])
+            BAKTA_BAKTA(ch_anno_assemblies, "assembly", ch_bakta_db.first(), [], [])
             ch_versions = ch_versions.mix(BAKTA_BAKTA.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(BAKTA_BAKTA.out.txt.collect { it[1] }.ifEmpty([]))
 
