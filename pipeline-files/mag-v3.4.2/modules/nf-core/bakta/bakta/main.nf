@@ -50,7 +50,7 @@ process BAKTA_BAKTA {
         $proteins_opt \\
         $prod_tf \\
         --force \\
-        --verbose
+        --skip-plot
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

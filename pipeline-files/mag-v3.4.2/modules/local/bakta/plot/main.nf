@@ -13,8 +13,7 @@ process BAKTA_PLOT {
     val bakta_plot
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.png")       , emit: png
-    tuple val(meta), path("${prefix}.${out_type}.svg")       , emit: svg
+    tuple val(meta), path("${prefix}.${out_type}.{png,svg}") , emit: plot
     path "versions.yml"                                      , emit: versions
 
     when:
@@ -33,7 +32,6 @@ process BAKTA_PLOT {
         --type $plot_type \\
         $json \\
         $args \\
-        --verbose \\
         --force
 
 
