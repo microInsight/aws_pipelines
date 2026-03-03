@@ -103,7 +103,7 @@ workflow SHORTREAD_PREPROCESSING {
         }
     }
 
-    if (params.host_fasta || params.host_genome) {
+    if (!params.skip_host_removal && (params.host_fasta || params.host_genome)) {
         /* BOWTIE2_HOST_REMOVAL_ALIGN(
             ch_short_reads_prepped,
             host_reference_dir

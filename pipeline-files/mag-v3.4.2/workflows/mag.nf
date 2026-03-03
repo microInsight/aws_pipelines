@@ -85,13 +85,13 @@ workflow MAG {
     /* --  Create channel for reference databases  -- */
     ////////////////////////////////////////////////////
 
-    if (params.host_genome) {
+    if (!params.skip_host_removal && params.host_genome) {
         host_fasta = params.genomes[params.host_genome].fasta ?: false
         ch_host_fasta = Channel.value(file("${host_fasta}"))
         host_bowtie2index = params.genomes[params.host_genome].bowtie2 ?: false
         ch_host_bowtie2index = Channel.fromPath("${host_bowtie2index}", checkIfExists: true).first()
     }
-    else if (params.host_fasta) {
+    else if (!params.skip_host_removal && params.host_fasta) {
         ch_host_fasta = Channel.fromPath(file("${params.host_fasta}", checkIfExists: true)) ?: false
 
         if (params.host_fasta_bowtie2index) {
@@ -780,8 +780,8 @@ workflow MAG {
             bgc_prokka_input_fasta = Channel.empty()
             bgc_prokka_input_gbk   = Channel.empty()
 
-            bgc_input_fasta = bgc_bakta_input_fasta.mix(bgc_prokka_input_fasta)
-            bgc_input_gbk = bgc_bakta_input_gbk.mix(bgc_prokka_input_gbk)
+            bgc_input_fasta = bgc_bakta_input_fasta.mix(bgc_prokka_input_fasta).mix(PYRODIGAL.out.faa)
+            bgc_input_gbk = bgc_bakta_input_gbk.mix(bgc_prokka_input_gbk).mix(PYRODIGAL.out.annotations)
 
         }
         else if ( params.run_bgc_screening && !params.skip_prokka ) {
@@ -795,8 +795,8 @@ workflow MAG {
             bgc_bakta_input_fasta = Channel.empty()
             bgc_bakta_input_gbk   = Channel.empty()
 
-            bgc_input_fasta = bgc_prokka_input_fasta.mix(bgc_bakta_input_fasta)
-            bgc_input_gbk = bgc_prokka_input_gbk.mix(bgc_bakta_input_gbk)
+            bgc_input_fasta = bgc_prokka_input_fasta.mix(bgc_bakta_input_fasta).mix(PYRODIGAL.out.faa)
+            bgc_input_gbk = bgc_prokka_input_gbk.mix(bgc_bakta_input_gbk).mix(PYRODIGAL.out.annotations)
 
         }
         else {

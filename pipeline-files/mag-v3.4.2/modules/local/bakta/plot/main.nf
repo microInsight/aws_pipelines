@@ -13,8 +13,9 @@ process BAKTA_PLOT {
     val bakta_plot
 
     output:
-    tuple val(meta), path("${prefix}.${out_type}.{png,svg}") , emit: plot
-    path "versions.yml"                                      , emit: versions
+    tuple val(meta), path("${prefix}.${out_type}.png") , emit: png
+    tuple val(meta), path("${prefix}.${out_type}.svg") , emit: svg
+    path "versions.yml"                                , emit: versions
 
     when:
     task.ext.when == null || task.ext.when

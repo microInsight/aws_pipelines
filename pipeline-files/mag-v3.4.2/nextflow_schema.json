@@ -338,6 +338,11 @@
                     "pattern": "^[ATGCRYKMSWBDHVN]*$",
                     "description": "Reverse read adapter to be trimmed by AdapterRemoval for paired end data."
                 },
+                "skip_host_removal": {
+                    "type": "boolean",
+                    "help_text": "Should host read removal be skipped? Default true since process only performs on 1 sample. Skip until bug fixed.",
+                    "description": "Skip host read removal? Default is true."
+                },
                 "host_genome": {
                     "type": "string",
                     "help_text": "This parameter is mutually exclusive with `--host_fasta`. Host read removal is done with Bowtie2. \nBoth the iGenomes FASTA file as well as corresponding, already pre-built Bowtie 2 index files will be used.",

@@ -21,7 +21,7 @@ workflow BGC_DETECTION {
     ch_bgcresults_for_combgc = Channel.empty()
 
     // ANTISMASH
-    if (!params.bgc_skip_antismash && !params.skip_bakta) {
+    if (!params.bgc_skip_antismash) {
         // Do not run antiSMASH using Prokka output - only use Pyrodigal or Bakta output files (see nf-core/funcscan usage notes on website).
         if (params.bgc_antismash_db && params.bgc_antismash_db.endsWith(".gz")) {
             UNTAR([[id: 'antismashdb'], file(params.bgc_antismash_db, checkIfExists: true)])
