@@ -13,8 +13,9 @@ process BAKTA_PLOT {
     val bakta_plot
 
     output:
-    tuple val(meta), path("${prefix}.{png,svg}") , emit: plot
-    path "versions.yml"                          , emit: versions
+    tuple val(meta), path("${prefix}.png"), emit: png
+    tuple val(meta), path("${prefix}.svg"), emit: svg
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -32,7 +33,8 @@ process BAKTA_PLOT {
 
     python3 /mnt/workflow/definition/mag-v3.4.2/bin/bakta_plot.py \\
         --type $plot_type \\
-        $json \\
+        --prefix $prefix \\
+        "$json" \\
         --tmp-dir ./temp \\
         $args
 

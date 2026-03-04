@@ -774,7 +774,7 @@ workflow MAG {
             ch_bakta_plot_feat = BAKTA_BAKTA.out.json.map { meta, json ->
                 [meta + [bakta_plot: "Features"], json]
                 }
-            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
+            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat).unique()
 
             BAKTA_PLOT_FEATURES(ch_bakta_plot, "bins", "Features")
             BAKTA_PLOT_COG(ch_bakta_plot, "bins", "COG")
@@ -909,7 +909,7 @@ workflow MAG {
             ch_bakta_plot_feat = BAKTA_BAKTA.out.json.map { meta, json ->
                 [meta + [bakta_plot: "Features"], json]
                 }
-            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat)
+            ch_bakta_plot = ch_bakta_plot_cog.mix(ch_bakta_plot_feat).unique()
 
             BAKTA_PLOT_COG(ch_bakta_plot, "assembly", "COG")
             BAKTA_PLOT_FEATURES(ch_bakta_plot, "assembly", "Features")
