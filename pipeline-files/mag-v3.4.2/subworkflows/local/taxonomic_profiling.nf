@@ -159,14 +159,14 @@ workflow TAXONOMIC_PROFILING {
     }
     else if (params.skip_kraken2 && !params.skip_centrifuger) {
         // Centrifuger taxonomic profiling - no Kraken2
-        CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_centrifuger_results = CENTRIFUGER_CENTRIFUGER.out.results
             .map { meta, result ->
                 [meta + [tool: 'centrifuger'], result]
             }
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
 
-        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_taxa_profiles = ch_taxa_profiles.mix(
             CENTRIFUGER_QUANT.out.quant_results.map { meta, report ->
                 [meta + [classifier: "centrifuger"] + [tool: 'centrifuge'], report]
@@ -174,7 +174,7 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_versions = ch_versions.mix(CENTRIFUGER_QUANT.out.versions)
 
-        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
             CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
@@ -222,7 +222,7 @@ workflow TAXONOMIC_PROFILING {
         )
 
         // Centrifuger taxonomic profiling
-        CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_CENTRIFUGER(ch_cent_reads, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_cent_results = CENTRIFUGER_CENTRIFUGER.out.results
         ch_centrifuger_results = ch_cent_results.mix(
             CENTRIFUGER_CENTRIFUGER.out.results.map { meta, result ->
@@ -231,7 +231,7 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_versions = ch_versions.mix(CENTRIFUGER_CENTRIFUGER.out.versions)
 
-        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_QUANT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_taxa_profiles = ch_taxa_profiles.mix(
             CENTRIFUGER_QUANT.out.quant_results.map { meta, report ->
                 [meta + [classifier: "centrifuger"] + [tool: 'centrifuge'], report]
@@ -239,7 +239,7 @@ workflow TAXONOMIC_PROFILING {
         )
         ch_versions = ch_versions.mix(CENTRIFUGER_QUANT.out.versions)
 
-        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar)
+        CENTRIFUGER_KREPORT(ch_centrifuger_results, CENTRIFUGER_GET_DIR.out.untar.first())
         ch_versions = ch_versions.mix(CENTRIFUGER_KREPORT.out.versions)
         ch_taxa_profiles = ch_taxa_profiles.mix(
             CENTRIFUGER_KREPORT.out.kreport.map { meta, report ->
@@ -382,11 +382,12 @@ workflow TAXONOMIC_PROFILING {
     }
 
     emit:
-    profiles      = ch_taxa_profiles
-    ch_taxreports = ch_parsedreports
-    ch_kreports   = ch_plot_reports
-    ch_multiqc    = ch_multiqc_files
-    versions      = ch_versions
+    profiles                = ch_taxa_profiles
+    ch_taxreports           = ch_parsedreports
+    ch_kreports             = ch_plot_reports
+    k2_taxonomy_db          = k2_database
+    ch_multiqc              = ch_multiqc_files
+    versions                = ch_versions
 }
 
 // Custom Functions

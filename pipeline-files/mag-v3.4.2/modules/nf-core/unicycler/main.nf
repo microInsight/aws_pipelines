@@ -29,7 +29,6 @@ process UNICYCLER {
     unicycler \\
         $reads \\
         -t ${task.cpus} \\
-        --spades_options "--meta" \\
         $args \\
         --out ./
 

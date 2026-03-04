@@ -28,7 +28,7 @@ workflow BGC_DETECTION {
             ch_antismash_databases = UNTAR.out.untar
         }
         else {
-            ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true))
+            ch_antismash_databases = Channel.fromPath(file(params.bgc_antismash_db, checkIfExists: true)).first()
         }
 
         ch_antismash_gbks = gbks.filter{ meta, gbk ->
@@ -47,8 +47,8 @@ workflow BGC_DETECTION {
 
         // Filter out samples with no BGC hits
         ch_antismashresults_for_combgc = ch_antismashresults
-            .join(fastas, remainder: false)
-            .join(ANTISMASH_ANTISMASH.out.gbk_results, remainder: false)
+            .join(fastas, remainder: true)
+            .join(ANTISMASH_ANTISMASH.out.gbk_results, remainder: true)
             .map { meta, gbk_input, _fasta, _gbk_results ->
                 [meta, gbk_input]
             }
@@ -58,7 +58,7 @@ workflow BGC_DETECTION {
 
     // DEEPBGC
     if (!params.bgc_skip_deepbgc) {
-        ch_deepbgc_database = Channel.fromPath(file(params.bgc_deepbgc_db, checkIfExists: true))
+        ch_deepbgc_database = Channel.fromPath(file(params.bgc_deepbgc_db, checkIfExists: true)).first()
 
         DEEPBGC_PIPELINE(gbks, ch_deepbgc_database)
         ch_versions = ch_versions.mix(DEEPBGC_PIPELINE.out.versions)
@@ -77,7 +77,7 @@ workflow BGC_DETECTION {
         ch_versions = ch_versions.mix(GECCO_RUN.out.versions)
         ch_geccoresults_for_combgc = GECCO_RUN.out.gbk
             .mix(GECCO_RUN.out.clusters)
-            .groupTuple()
+            .groupTuple(by: 0)
             .map { meta, files ->
                 [meta, files.flatten()]
             }
@@ -87,12 +87,12 @@ workflow BGC_DETECTION {
     // COMBGC
 
     ch_bgcresults_for_combgc
-        .join(fastas, remainder: true)
-        .map { meta, bgcfile, fasta ->
-            [meta, bgcfile, fasta]
+        .map { meta, bgcfile ->
+            [meta, bgcfile]
         }
+        .set { combgc_input }
 
-    COMBGC(ch_bgcresults_for_combgc)
+    COMBGC(combgc_input)
     ch_versions = ch_versions.mix(COMBGC.out.versions)
 
     // COMBGC concatenation NOTE: turned off for now since it is still tied to MMSeqs2 output

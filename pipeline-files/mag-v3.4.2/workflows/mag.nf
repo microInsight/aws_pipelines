@@ -241,12 +241,13 @@ workflow MAG {
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
 
         // only activate if both Kraken2 and Centrifuger are ran - still needs tuning because merging profiles breaks
-        /*     TAXONOMIC_STANDARDISATION(
-                TAXONOMIC_PROFILING.out.profiles
+        TAXONOMIC_STANDARDISATION(
+                TAXONOMIC_PROFILING.out.profiles,
+                TAXONOMIC_PROFILING.out.k2_taxonomy_db
             )
             ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
-        */
+
 
         }
     }
@@ -362,14 +363,14 @@ workflow MAG {
             ch_versions = ch_versions.mix(METASPADESHYBRID.out.versions)
         }
 
-        if (!params.skip_unicycler) {
+        if (!params.skip_unicycler || (!params.skip_unicycler && params.skip_spades)) {
             UNICYCLER(ch_short_reads_grouped)
             ch_uniycler_assemblies = UNICYCLER.out.scaffolds.map { meta, assembly ->
                 def meta_new = meta + [assembler: 'UNICYCLER']
                 [meta_new, assembly]
             }
             ch_assembled_contigs = ch_assembled_contigs.mix(ch_uniycler_assemblies)
-            ch_versions = ch_versions.mix(METASPADES.out.versions)
+            ch_versions = ch_versions.mix(UNICYCLER.out.versions)
         }
 
         if (!params.skip_megahit) {
@@ -596,7 +597,7 @@ workflow MAG {
 
         SEQKIT_SEQ_LENGTH(ch_input_for_postbinning.map { meta, fa -> [meta, fa] })
         ch_postbinning_long = SEQKIT_SEQ_LENGTH.out.fastx.map { meta, fasta ->
-            [meta + [category: 'bgc_length'], fasta ]
+                [meta + [category: 'bgc_length'], fasta ]
             }
             .filter { meta, fasta ->
                 !fasta.isEmpty()
@@ -821,7 +822,10 @@ workflow MAG {
             }
         }
 
-        BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
+        if (params.run_bgc_screening) {
+            BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
+            ch_versions = ch_versions.mix(BGC_DETECTION.out.versions)
+        }
 
         if (!params.skip_metaeuk && (params.metaeuk_db || params.metaeuk_mmseqs_db)) {
             ch_bins_for_metaeuk = ch_input_for_postbinning
@@ -956,7 +960,10 @@ workflow MAG {
             }
         }
 
-        BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
+        if (params.run_bgc_screening) {
+            BGC_DETECTION(bgc_input_fasta, bgc_input_gbk)
+            ch_versions = ch_versions.mix(BGC_DETECTION.out.versions)
+        }
 
     }
 
