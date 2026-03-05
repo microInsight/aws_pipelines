@@ -240,15 +240,14 @@ workflow MAG {
             ch_versions = ch_versions.mix(TAXONOMIC_PROFILING.out.versions)
             ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_PROFILING.out.ch_multiqc.collect { it[1] }.ifEmpty([]))
 
-        // only activate if both Kraken2 and Centrifuger are ran - still needs tuning because merging profiles breaks
-        TAXONOMIC_STANDARDISATION(
-                TAXONOMIC_PROFILING.out.profiles,
-                TAXONOMIC_PROFILING.out.k2_taxonomy_db
-            )
-            ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
-            ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
-
-
+            if(!params.skip_taxonomic_standardisation){
+                TAXONOMIC_STANDARDISATION(
+                    TAXONOMIC_PROFILING.out.profiles,
+                    TAXONOMIC_PROFILING.out.k2_taxonomy_db
+                )
+                ch_versions = ch_versions.mix(TAXONOMIC_STANDARDISATION.out.versions)
+                ch_multiqc_files = ch_multiqc_files.mix(TAXONOMIC_STANDARDISATION.out.multiqc_files.collect { it[1] }.ifEmpty([]))
+            }
         }
     }
 

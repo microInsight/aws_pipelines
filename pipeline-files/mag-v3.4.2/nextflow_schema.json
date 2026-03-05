@@ -497,9 +497,13 @@
         "taxonomic_profiling_options": {
             "title": "Taxonomic profiling options",
             "type": "object",
-            "description": "Taxonomic classification is disabled by default. You have to specify one of the options below to activate it.",
+            "description": "Taxonomic classification is enabled by default. You have to specify one of the options below to activate it.",
             "default": "",
             "properties": {
+                "skip_taxonomic_standardisation": {
+                    "type": "boolean",
+                    "description": "Skip standardisation of taxonomic classification tool outputs? Default true until I can get it working correctly."
+                },
                 "kraken2_db": {
                     "type": "string",
                     "format": "path",
