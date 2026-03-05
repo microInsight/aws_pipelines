@@ -66,22 +66,34 @@ workflow TAXONOMIC_STANDARDISATION {
             centrifuge: meta.tool == "centrifuge"
         }
 
-    ch_input_for_taxpasta = ch_prepare_for_taxpasta.kraken2
+    ch_input_for_taxpasta_merge = ch_prepare_for_taxpasta.kraken2
         .mix(ch_prepare_for_taxpasta.bracken)
         .mix(ch_prepare_for_taxpasta.centrifuge)
+        .filter { _meta, report_files -> report_files.name.endsWith('.txt') }
+        .map { meta, report_files ->
+            [meta.project, meta.id, meta.tool, report_files]
+        }
         .groupTuple(by: [0, 2])
-        .map { meta, txt_files ->
+        .map { project, ids, tool, txt_files ->
             [
-                meta,
-                txt_files.collect { txt -> txt.txt }
-
+                [project: project, id: ids[0], tool: tool],
+                txt_files
             ]
         }
+
+    ch_input_for_taxpasta_stand = ch_prepare_for_taxpasta.kraken2
+        .mix(ch_prepare_for_taxpasta.bracken)
+        .mix(ch_prepare_for_taxpasta.centrifuge)
+        .trsanspose()
+        .map { meta, report_files ->
+            [meta.project, meta.id, meta.tool, report_files]
+        }
+        .groupTuple(by: [0, 2])
 
     // split GTDB R226 taxonomic information for taxpasta standardisation
     ch_taxpasta_tax_dir = params.taxpasta_taxonomy_dir ? Channel.fromPath(file(params.taxpasta_taxonomy_dir, checkIfExists: true)).first() : []
 
-    ch_taxpasta_in = ch_input_for_taxpasta
+    ch_taxpasta_in = ch_input_for_taxpasta_merge
         .multiMap { meta, taxa_profiles ->
             taxa_profiles: [meta, taxa_profiles]
             tool: meta.tool
@@ -112,7 +124,7 @@ workflow TAXONOMIC_STANDARDISATION {
         .mix(KRAKEN2BRACKEN_MERGE.out.merged_profiles)
 
     CENTRIFUGER_STANDARDISE(
-        ch_taxpasta_in.taxa_profiles.filter { meta, _report ->
+        ch_input_for_taxpasta_stand.filter { meta, _report ->
             meta.tool == "centrifuge"
         },
         'tsv',
@@ -121,7 +133,7 @@ workflow TAXONOMIC_STANDARDISATION {
     ch_versions = ch_versions.mix(CENTRIFUGER_STANDARDISE.out.versions)
 
     KRAKEN2BRACKEN_STANDARDISE(
-        ch_taxpasta_in.taxa_profiles.filter { meta, _report ->
+        ch_input_for_taxpasta_stand.filter { meta, _report ->
             meta.tool == "kraken2" || meta.tool == "bracken"
         },
         'tsv',
@@ -155,7 +167,7 @@ workflow TAXONOMIC_STANDARDISATION {
         [sort: { -it.size() }],
         )
         .map { meta, files ->
-            [meta, file(files)]
+            [meta, files]
         }
 
     KRAKENTOOLS_COMBINEKREPORTS_CENTRIFUGER(ch_profiles_for_centrifuger)
@@ -182,7 +194,7 @@ workflow TAXONOMIC_STANDARDISATION {
         [sort: { -it.size() }],
         )
         .map { meta, files ->
-            [meta, file(files)]
+            [meta, files]
         }
 
     PLOT_KRAKEN2(

@@ -272,6 +272,15 @@ workflow TAXONOMIC_PROFILING {
             [meta + [tool: br_tool], report]
         }
         ch_taxa_profiles = ch_taxa_profiles.mix(ch_bracken_results)
+        ch_taxa_profiles = ch_taxa_profiles.mix(
+            BRACKEN_KRAKEN.out.txt.map { meta, report ->
+                [meta + [tool: 'kraken2-bracken'], report]
+            }
+        ).mix(
+            BRACKEN_CENTRIFUGER.out.txt.map { meta, report ->
+                [meta + [tool: 'centrifuge-bracken'], report]
+            }
+        )
 
         ch_bracken_results
             .branch { meta, _report ->
