@@ -326,22 +326,22 @@ workflow TAXONOMIC_PROFILING {
 
         // this is abit messy, but need to join results together for final plot with 1 meta field and 4 files
         tax_k2 = TAXPASTA_STANDARDISE_KRAKEN2.out.standardised_profile.map { meta, file ->
-            [meta, file.flatten()]
+            [meta.subMap('id'), file.flatten()]
         }
         tax_cent = TAXPASTA_STANDARDISE_CENTRIFUGER.out.standardised_profile.map { meta, file ->
-            [meta, file.flatten()]
+            [meta.subMap('id'), file.flatten()]
         }
         br_k2 = BRACKEN_KRAKEN.out.reports.map { meta, file ->
-            [meta, file.flatten()]
+            [meta.subMap('id'), file.flatten()]
         }
         br_cent = BRACKEN_CENTRIFUGER.out.reports.map { meta, file ->
-            [meta, file.flatten()]
+            [meta.subMap('id'), file.flatten()]
         }
         ch_taxhits_input = tax_k2
-            .join(tax_cent, by: [0])
-            .join(br_k2, by: [0])
-            .join(br_cent, by: [0])
-            .map { _key, meta_1, prof_1, _meta_2, prof_2, _meta_3, prof_3, _meta_4, prof_4 ->
+            .join(tax_cent, by: 0)
+            .join(br_k2, by: 0)
+            .join(br_cent, by: 0)
+            .map { _id, meta_1, prof_1, _meta_2, prof_2, _meta_3, prof_3, _meta_4, prof_4 ->
                 [meta_1, file(prof_1), file(prof_2), file(prof_3), file(prof_4)]
             }
         PLOT_TAXHITS(
