@@ -72,23 +72,16 @@ workflow TAXONOMIC_STANDARDISATION {
         .filter { _meta, report_files -> report_files.name.endsWith('.txt') }
         .map { meta, report_files ->
             def new_meta = meta.subMap(['project', 'id', 'tool'])
-            [new_meta, report_files]
+                [new_meta, report_files]
         }
         .groupTuple(by: [0, 2])
-        .map { meta, txt_files ->
-            def new_meta = meta.subMap(['project', 'id', 'tool'])
-                [
-                    new_meta,
-                    txt_files
-                ]
-        }
 
     ch_input_for_taxpasta_stand = ch_prepare_for_taxpasta.kraken2
         .mix(ch_prepare_for_taxpasta.bracken)
         .mix(ch_prepare_for_taxpasta.centrifuge)
         .map { meta, report_files ->
             def new_meta = meta.subMap(['project', 'id', 'tool'])
-                [new_meta, [report_files]]
+                [new_meta, report_files]
         }
         .groupTuple(by: 0)
 
